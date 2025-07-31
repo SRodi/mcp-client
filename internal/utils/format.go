@@ -5,11 +5,11 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/srodi/mcp-client/internal/mcp"
+	"github.com/srodi/netspy/internal/netclient"
 )
 
 // FormatConnectionSummary creates a human-readable summary of connection data
-func FormatConnectionSummary(pid int, processName string, duration int, summary mcp.ConnectionSummaryResponse) string {
+func FormatConnectionSummary(pid int, processName string, duration int, summary netclient.ConnectionSummaryOutput) string {
 	var target string
 	if pid > 0 {
 		target = fmt.Sprintf("PID %d", pid)
@@ -17,16 +17,16 @@ func FormatConnectionSummary(pid int, processName string, duration int, summary 
 		target = fmt.Sprintf("process '%s'", processName)
 	}
 
-	if summary.Result.Total == 0 {
+	if summary.Total == 0 {
 		return fmt.Sprintf("No network connections found for %s in the last %d seconds", target, duration)
 	}
 
 	return fmt.Sprintf("%s made %d outbound connection attempts over the last %d seconds",
-		target, summary.Result.Total, duration)
+		target, summary.Total, duration)
 }
 
 // FormatConnectionEvents provides a detailed view of connection events
-func FormatConnectionEvents(events []mcp.ConnectionEvent, maxEvents int) string {
+func FormatConnectionEvents(events []netclient.ConnectionEvent, maxEvents int) string {
 	if len(events) == 0 {
 		return "No connection events found"
 	}
@@ -62,7 +62,7 @@ func FormatConnectionEvents(events []mcp.ConnectionEvent, maxEvents int) string 
 }
 
 // AnalyzeConnectionPatterns provides insights about connection patterns
-func AnalyzeConnectionPatterns(events []mcp.ConnectionEvent) string {
+func AnalyzeConnectionPatterns(events []netclient.ConnectionEvent) string {
 	if len(events) == 0 {
 		return "No patterns to analyze"
 	}
@@ -95,7 +95,7 @@ func AnalyzeConnectionPatterns(events []mcp.ConnectionEvent) string {
 			return sorted[i].count > sorted[j].count
 		})
 
-		limit := 5
+		limit := 10
 		if len(sorted) < limit {
 			limit = len(sorted)
 		}

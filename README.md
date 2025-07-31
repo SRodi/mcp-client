@@ -1,177 +1,269 @@
-# mcp-client
+# Network Telemetry MCP Client
 
-A flexible CLI tool that queries the MCP eBPF server to provide real-time network connectivity analytics and insights.
+A unified CLI tool that provides MCP (Model Context Protocol) server capabilities for real-time network connectivity analytics and AI-powered insights.
 
 ## Features
 
-- **Flexible Process Identification**: Query by PID or process name
+- **Process Identification**: Query by PID or process name
 - **Network Connection Tracking**: Monitor connection attempts and patterns
-- **AI-Powered Insights**: OpenAI integration for network behavior analysis and recommendations
-- **Connection Listing**: View detailed connection events  
-- **Configurable Duration**: Analyze connections over custom time periods
+- **AI-Powered Insights**: OpenAI GPT-3.5-turbo integration for network behavior analysis
 - **Multiple Output Modes**: Summary, detailed listings, and pattern analysis
+- **HTTP REST API**: Simple and reliable communication with the eBPF server
+- **MCP Integration**: Self-contained MCP server with internal client communication
+- **Interactive Mode**: Command-line interface for real-time network analysis
+
+## Architecture
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   netspy CLI    │───▶│   MCP Server    │───▶│  eBPF Server    │
+│  (MCP Client)   │    │  (Internal)     │    │ (HTTP API)      │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+                              │
+                              ▼
+                       ┌─────────────────┐
+                       │  OpenAI API     │
+                       │ (GPT-3.5-turbo) │
+                       └─────────────────┘
+```
 
 ## Prerequisites
 
-- [mcp-ebpf server](https://github.com/SRodi/mcp-ebpf) running (default: localhost:8080)
-- Optional: OpenAI API key for network insights (set `OPENAI_API_KEY` environment variable)
+1. **eBPF Network Monitor Server**: Build from [ebpf-server repository](https://github.com/SRodi/ebpf-server)
+   ```bash
+   git clone git@github.com:SRodi/ebpf-server.git
+   cd ebpf-server
+   make build  # Compiles both Go code AND eBPF programs
+   ```
 
-**Note**: The mcp-ebpf server captures `connect()` syscall attempts, not actual network latency. This tool provides insights about connection patterns and frequency, which is valuable for understanding application behavior and network usage patterns.
+2. **Root Privileges**: Required for eBPF operations on the server
+
+3. **Optional**: OpenAI API key for insights (set `OPENAI_API_KEY` environment variable)
 
 ## Installation
 
 ```bash
-go build -o mcp-client ./cmd/client
+go build -o netspy ./cmd/netspy
 ```
 
 ## Usage
 
-### Basic Usage
+### Interactive Mode (Default)
+
+Start an interactive session with the integrated MCP server:
 
 ```bash
-# Analyze by process name (recommended for most use cases)
-./mcp-client --process curl
-
-# Analyze by PID
-./mcp-client --pid 1234
-
-# Analyze over custom time period
-./mcp-client --process ssh --duration 300  # 5 minutes
-
-# List all recent connections
-./mcp-client --list
-
-# List connections for specific process
-./mcp-client --process nginx --list
-
-# Analyze connection patterns
-./mcp-client --process database --analyze
+# Start interactive mode
+./netspy
 ```
 
-### Advanced Usage
+Interactive commands:
+```
+netspy-mcp> summary --pid 1234 --duration 120
+netspy-mcp> list --process curl --max-events 20
+netspy-mcp> analyze --process nginx
+netspy-mcp> insights "curl made 5 connection attempts in 60 seconds"
+netspy-mcp> tools
+netspy-mcp> help
+netspy-mcp> quit
+```
+
+### Single Command Mode
+
+Execute specific MCP tools directly:
 
 ```bash
-# Verbose output with server details
-./mcp-client --process curl --verbose
+# Get network summary
+./netspy --tool get_network_summary --pid 1234 --duration 120
 
-# Custom MCP server URL
-./mcp-client --process ssh --server http://remote-server:8080/mcp
+# List connections
+./netspy --tool list_connections --process curl --max-events 15
 
-# Combine listing with pattern analysis
-./mcp-client --process web-server --list --analyze --max-events 20
+# Analyze patterns
+./netspy --tool analyze_patterns --process ssh
 
-# Quick debugging - list recent connections
-./mcp-client --list --max-events 5
+# Get AI insights (requires summary text)
+./netspy --tool ai_insights --summary-text "nginx made 25 connections in 300 seconds"
 ```
 
-### Command Line Options
+### Quick Start
 
-- `--pid <number>`: Analyze specific process ID
-- `--process <name>`: Analyze by process name (e.g., 'curl', 'ssh', 'nginx')
-- `--duration <seconds>`: Time window to analyze (default: 60 seconds)
-- `--server <url>`: MCP server URL (default: http://localhost:8080/mcp)
-- `--list`: List recent connection events instead of summary
-- `--analyze`: Show connection pattern analysis
-- `--max-events <number>`: Maximum events to show in list mode (default: 10)
-- `--verbose`: Enable verbose output
-
-## Use Cases
-
-### Network Analytics & Monitoring
+The application works with a persistent eBPF HTTP API server:
 
 ```bash
-# Get network activity insights for a service
-./mcp-client --process nginx --analyze
+# 1. Start the eBPF API server (run once and keep running)
+cd /path/to/ebpf-server
+sudo ./bin/ebpf-server --http --port 8080
 
-# Monitor database connection attempts over time
-./mcp-client --process postgres --duration 1800  # 30 minutes
+# 2. Generate some network traffic
+curl -s http://google.com
+curl -s http://github.com
 
-# Analyze connection patterns for optimization
-./mcp-client --process web-service --list --analyze
-
-# Real-time network activity overview  
-./mcp-client --list --max-events 20
+# 3. Use netspy to analyze connections
+./netspy
+# Then in interactive mode:
+# netspy-mcp> summary --process curl
+# netspy-mcp> list
+# netspy-mcp> analyze --process curl
 ```
 
-### Application Behavior Analysis
+## MCP Tools
 
-```bash
-# Analyze network connection patterns for insights
-./mcp-client --process api-server --duration 3600 --verbose
+The integrated MCP server provides these tools:
 
-# Compare connection patterns between services  
-./mcp-client --process service-v1 --analyze
-./mcp-client --process service-v2 --analyze
+- **get_network_summary**: Get connection statistics for processes/PIDs
+- **list_connections**: List recent network connection events with filtering
+- **analyze_patterns**: Analyze connection patterns and provide insights
+- **ai_insights**: Generate AI-powered insights using OpenAI GPT-3.5-turbo
 
-# Monitor connection frequency and patterns
-./mcp-client --process cache-service --duration 600
-```
+## Command Line Options
 
-### Development & Integration
+### General Options
+- `--server URL`: eBPF server URL (default: http://localhost:8080)
+- `--verbose`: Enable verbose logging
+- `--help`: Show help information
 
-```bash
-# Understand application network behavior
-./mcp-client --process myapp --list --analyze
+### Tool Execution
+- `--tool TOOL`: Run specific MCP tool and exit
 
-# Validate expected connections during development
-./mcp-client --process test-service --verbose
+### Tool Parameters
+- `--pid PID`: Process ID to monitor
+- `--process NAME`: Process name to monitor
+- `--duration SECONDS`: Duration in seconds (default: 60)
+- `--max-events COUNT`: Maximum events to retrieve (default: 100)
+- `--summary-text TEXT`: Summary text for AI insights
 
-# Monitor integration points
-./mcp-client --process integration-service --duration 900
-```
+## API Endpoints
+
+The eBPF server provides the following HTTP REST API endpoints that the MCP server communicates with:
+
+- `GET /health` - Health check
+- `POST /api/connection-summary` - Get connection statistics
+- `GET /api/list-connections` - List connections (simple queries)
+- `POST /api/list-connections` - List connections (complex queries)
 
 ## Sample Output
 
-### Summary Mode
-```
-🔍 Network Telemetry Summary:
+### Interactive Mode
+```bash
+$ ./netspy
+🔗 Network Telemetry MCP Server
+Starting interactive mode...
+
+Available commands:
+  summary      - Get network connection summary
+  list         - List recent connections
+  analyze      - Analyze connection patterns
+  insights     - Get AI insights about network behavior
+  tools        - Show available MCP tools
+  help         - Show this help message
+  quit/exit    - Exit interactive mode
+
+netspy-mcp> summary --process curl
 Process 'curl' made 5 outbound connection attempts over the last 60 seconds
 
-🤖 AI Network Insights:
-This connection pattern shows typical web client behavior. The process made 5 connection attempts over 60 seconds, suggesting multiple HTTP requests or redirects. This frequency is normal for a command-line HTTP client. Consider connection pooling if this becomes a high-frequency service...
-```
-
-### List Mode
-```
-Recent connection events (12 total):
-  14:30:45 | 93.184.216.34:80 | TCP | curl
-  14:30:40 | 8.8.8.8:53 | UDP | curl
-  14:30:35 | 151.101.1.140:443 | TCP | curl
-  ... and 9 more events
-```
-
-### Analysis Mode
-```
+netspy-mcp> analyze --process curl
 Connection Analysis:
   Top destinations:
-    93.184.216.34:80 (3 connections)
+    172.217.164.78:443 (3 connections)
     8.8.8.8:53 (2 connections)
-    151.101.1.140:443 (1 connections)
-  Protocols: TCP (4), UDP (1)
+  Protocols: TCP (3), UDP (2)
+
+netspy-mcp> insights "curl made 5 connections in 60 seconds"
+🤖 AI Network Insights:
+This connection pattern shows typical web client behavior...
 ```
 
-## Integration with mcp-ebpf
-
-This client is designed to work seamlessly with the [mcp-ebpf server](https://github.com/SRodi/mcp-ebpf). The eBPF server must be running with root privileges to monitor network connections:
-
+### Single Command Mode
 ```bash
-# Start the eBPF server (in another terminal)
-cd /path/to/mcp-ebpf
-sudo make run
-
-# Then use this client
-./mcp-client --process your-app
+$ ./netspy --tool get_network_summary --process curl
+Process 'curl' made 5 outbound connection attempts over the last 60 seconds
 ```
 
-## Error Handling
+## Troubleshooting
 
-The client provides helpful error messages and suggestions:
+**"Connection refused" or failed connection**
+- Ensure the eBPF API server is running with `--http --port 8080`
+- Check that nothing else is using port 8080
+- Verify the server started successfully (check for error messages)
+- Test server health: `curl http://localhost:8080/health`
 
-- **No connections found**: Suggests checking process name or increasing duration
-- **Server unavailable**: Provides server connection details
-- **Invalid process**: Suggests using `--list` to see available processes
-- **OpenAI unavailable**: Gracefully continues without AI insights
+**"No connections found" when server has data**
+- **Solution**: Ensure the eBPF API server is running:
+  ```bash
+  # Start server
+  cd /path/to/ebpf-server
+  sudo ./bin/ebpf-server --http --port 8080
+  
+  # Generate some traffic
+  curl -s http://google.com
+  
+  # Query netspy
+  ./netspy
+  # netspy-mcp> list
+  ```
+- **Check server status**: Use `netstat -tlnp | grep 8080` to verify server is listening
 
-## Contributing
+**"open bpf/connection.o: no such file or directory"**
+- Build server with `make build` in ebpf-server repository
+- Server needs compiled eBPF programs, not just Go binary
 
-Feel free to submit issues and enhancement requests!
+**"permission denied"**  
+- Use `sudo` for the eBPF server - eBPF operations require root privileges
+- netspy client can run without sudo when using HTTP API mode
+
+**Tool failures**
+- Ensure eBPF server is running and accessible
+- Check `--server` URL parameter points to correct eBPF server
+- Use `--verbose` flag for detailed error information
+
+## Developer Usage
+
+### MCP Integration
+```go
+import "github.com/srodi/netspy/internal/mcp"
+
+// Create MCP client with embedded server
+mcpClient := mcp.NewMCPClient("http://localhost:8080", true)
+
+// Start interactive mode
+ctx := context.Background()
+err := mcpClient.StartInteractiveMode(ctx)
+
+// Or execute single command
+arguments := map[string]any{
+    "pid": 1234,
+    "duration": 120,
+}
+result, err := mcpClient.RunSingleCommand(ctx, "get_network_summary", arguments)
+```
+
+### HTTP Client
+```go
+import "github.com/srodi/netspy/internal/netclient"
+
+// Create HTTP client
+client := netclient.NewClient("http://localhost:8080")
+
+// Connect and use
+ctx := context.Background()
+if err := client.Connect(ctx); err != nil {
+    return err
+}
+defer client.Close()
+
+// Get connection summary
+summary, err := client.GetConnectionSummary(ctx, pid, process, duration)
+
+// List connections
+connections, err := client.ListConnections(ctx, nil, nil)
+```
+
+### Key Components:
+- **MCP Server**: Self-contained Model Context Protocol implementation
+- **MCP Client**: Interactive and programmatic interface to MCP tools
+- **HTTP REST API**: Communication layer with eBPF server
+- **AI Integration**: OpenAI GPT-3.5-turbo for network behavior insights
+- **JSON Request/Response**: Standard HTTP content types
+- **Health Monitoring**: Built-in health check endpoint
+- **Error Handling**: Proper HTTP status codes and error messages
