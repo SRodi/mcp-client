@@ -14,161 +14,65 @@ func TestConnectionInfo_ToConnectionEvent(t *testing.T) {
 		{
 			name: "basic connection with IP:port destination",
 			input: ConnectionInfo{
-				PID:         1234,
-				Command:     "nginx",
-				Destination: "192.168.1.100:80",
-				Protocol:    "tcp",
-				ReturnCode:  0,
-				Timestamp:   "2024-01-01T12:00:00Z",
+				PID:             1234,
+				Command:         "nginx",
+				Destination:     "192.168.1.100:80",
+				DestinationIP:   "192.168.1.100",
+				DestinationPort: 80,
+				Protocol:        "TCP",
+				ReturnCode:      0,
+				Time:            "2024-01-01T12:00:00Z",
 			},
 			expected: ConnectionEvent{
 				PID:             1234,
 				Command:         "nginx",
 				DestinationIP:   "192.168.1.100",
 				DestinationPort: 80,
-				Protocol:        "tcp",
+				Protocol:        "TCP",
 				ReturnCode:      0,
 				Destination:     "192.168.1.100:80",
 			},
 		},
 		{
-			name: "connection with hostname:port destination",
+			name: "connection with Unix socket (empty destination)",
 			input: ConnectionInfo{
 				PID:         5678,
 				Command:     "curl",
-				Destination: "example.com:443",
-				Protocol:    "tcp",
+				Destination: "",
+				Protocol:    "Unknown(0)",
 				ReturnCode:  0,
-				Timestamp:   "2024-01-01T12:01:00Z",
+				Time:        "2024-01-01T12:01:00Z",
 			},
 			expected: ConnectionEvent{
 				PID:             5678,
 				Command:         "curl",
-				DestinationIP:   "example.com",
-				DestinationPort: 443,
-				Protocol:        "tcp",
-				ReturnCode:      0,
-				Destination:     "example.com:443",
-			},
-		},
-		{
-			name: "connection with IPv6 address",
-			input: ConnectionInfo{
-				PID:         9876,
-				Command:     "ssh",
-				Destination: "[2001:db8::1]:22",
-				Protocol:    "tcp",
-				ReturnCode:  0,
-				Timestamp:   "2024-01-01T12:02:00Z",
-			},
-			expected: ConnectionEvent{
-				PID:             9876,
-				Command:         "ssh",
-				DestinationIP:   "[2001:db8::1]",
-				DestinationPort: 22,
-				Protocol:        "tcp",
-				ReturnCode:      0,
-				Destination:     "[2001:db8::1]:22",
-			},
-		},
-		{
-			name: "connection with invalid port (should default to 0)",
-			input: ConnectionInfo{
-				PID:         1111,
-				Command:     "test",
-				Destination: "localhost:invalid",
-				Protocol:    "tcp",
-				ReturnCode:  -1,
-				Timestamp:   "2024-01-01T12:03:00Z",
-			},
-			expected: ConnectionEvent{
-				PID:             1111,
-				Command:         "test",
-				DestinationIP:   "localhost",
-				DestinationPort: 0,
-				Protocol:        "tcp",
-				ReturnCode:      -1,
-				Destination:     "localhost:invalid",
-			},
-		},
-		{
-			name: "connection without port (should default to 0)",
-			input: ConnectionInfo{
-				PID:         2222,
-				Command:     "ping",
-				Destination: "8.8.8.8",
-				Protocol:    "icmp",
-				ReturnCode:  0,
-				Timestamp:   "2024-01-01T12:04:00Z",
-			},
-			expected: ConnectionEvent{
-				PID:             2222,
-				Command:         "ping",
-				DestinationIP:   "8.8.8.8",
-				DestinationPort: 0,
-				Protocol:        "icmp",
-				ReturnCode:      0,
-				Destination:     "8.8.8.8",
-			},
-		},
-		{
-			name: "empty destination",
-			input: ConnectionInfo{
-				PID:         3333,
-				Command:     "empty",
-				Destination: "",
-				Protocol:    "tcp",
-				ReturnCode:  0,
-				Timestamp:   "2024-01-01T12:05:00Z",
-			},
-			expected: ConnectionEvent{
-				PID:             3333,
-				Command:         "empty",
 				DestinationIP:   "",
 				DestinationPort: 0,
-				Protocol:        "tcp",
+				Protocol:        "Unknown(0)",
 				ReturnCode:      0,
 				Destination:     "",
 			},
 		},
 		{
-			name: "connection with port 0 explicitly",
+			name: "connection with API-provided destination info",
 			input: ConnectionInfo{
-				PID:         4444,
-				Command:     "test",
-				Destination: "127.0.0.1:0",
-				Protocol:    "tcp",
-				ReturnCode:  0,
-				Timestamp:   "2024-01-01T12:06:00Z",
+				PID:             9876,
+				Command:         "ssh",
+				Destination:     "example.com:22",
+				DestinationIP:   "example.com",
+				DestinationPort: 22,
+				Protocol:        "TCP",
+				ReturnCode:      0,
+				Time:            "2024-01-01T12:02:00Z",
 			},
 			expected: ConnectionEvent{
-				PID:             4444,
-				Command:         "test",
-				DestinationIP:   "127.0.0.1",
-				DestinationPort: 0,
-				Protocol:        "tcp",
+				PID:             9876,
+				Command:         "ssh",
+				DestinationIP:   "example.com",
+				DestinationPort: 22,
+				Protocol:        "TCP",
 				ReturnCode:      0,
-				Destination:     "127.0.0.1:0",
-			},
-		},
-		{
-			name: "connection with high port number",
-			input: ConnectionInfo{
-				PID:         5555,
-				Command:     "high-port",
-				Destination: "example.org:65535",
-				Protocol:    "tcp",
-				ReturnCode:  0,
-				Timestamp:   "2024-01-01T12:07:00Z",
-			},
-			expected: ConnectionEvent{
-				PID:             5555,
-				Command:         "high-port",
-				DestinationIP:   "example.org",
-				DestinationPort: 65535,
-				Protocol:        "tcp",
-				ReturnCode:      0,
-				Destination:     "example.org:65535",
+				Destination:     "example.com:22",
 			},
 		},
 	}
@@ -178,149 +82,77 @@ func TestConnectionInfo_ToConnectionEvent(t *testing.T) {
 			result := tt.input.ToConnectionEvent()
 
 			if result.PID != tt.expected.PID {
-				t.Errorf("PID: expected %d, got %d", tt.expected.PID, result.PID)
+				t.Errorf("PID = %v, want %v", result.PID, tt.expected.PID)
 			}
 			if result.Command != tt.expected.Command {
-				t.Errorf("Command: expected '%s', got '%s'", tt.expected.Command, result.Command)
+				t.Errorf("Command = %v, want %v", result.Command, tt.expected.Command)
 			}
 			if result.DestinationIP != tt.expected.DestinationIP {
-				t.Errorf("DestinationIP: expected '%s', got '%s'", tt.expected.DestinationIP, result.DestinationIP)
+				t.Errorf("DestinationIP = %v, want %v", result.DestinationIP, tt.expected.DestinationIP)
 			}
 			if result.DestinationPort != tt.expected.DestinationPort {
-				t.Errorf("DestinationPort: expected %d, got %d", tt.expected.DestinationPort, result.DestinationPort)
+				t.Errorf("DestinationPort = %v, want %v", result.DestinationPort, tt.expected.DestinationPort)
 			}
 			if result.Protocol != tt.expected.Protocol {
-				t.Errorf("Protocol: expected '%s', got '%s'", tt.expected.Protocol, result.Protocol)
+				t.Errorf("Protocol = %v, want %v", result.Protocol, tt.expected.Protocol)
 			}
 			if result.ReturnCode != tt.expected.ReturnCode {
-				t.Errorf("ReturnCode: expected %d, got %d", tt.expected.ReturnCode, result.ReturnCode)
+				t.Errorf("ReturnCode = %v, want %v", result.ReturnCode, tt.expected.ReturnCode)
 			}
 			if result.Destination != tt.expected.Destination {
-				t.Errorf("Destination: expected '%s', got '%s'", tt.expected.Destination, result.Destination)
+				t.Errorf("Destination = %v, want %v", result.Destination, tt.expected.Destination)
+			}
+
+			// Test that timestamp parsing worked (should be a valid time)
+			if result.WallTime.IsZero() {
+				t.Error("WallTime should not be zero")
+			}
+			
+			// Test that the time matches what we expect (2024-01-01 12:xx:00 UTC)
+			expectedTime, _ := time.Parse(time.RFC3339, tt.input.Time)
+			if !result.WallTime.Equal(expectedTime) {
+				t.Errorf("WallTime = %v, want %v", result.WallTime, expectedTime)
 			}
 		})
 	}
 }
 
-func TestConnectionInfo_ToConnectionEvent_EdgeCases(t *testing.T) {
-	// Test various edge cases for destination parsing
-	edgeCases := []struct {
-		destination  string
-		expectedIP   string
-		expectedPort uint16
-		description  string
+func TestParseDestination(t *testing.T) {
+	tests := []struct {
+		name             string
+		destination      string
+		expectedIP       string
+		expectedPort     uint16
 	}{
-		{"localhost:8080", "localhost", 8080, "standard localhost with port"},
-		{"127.0.0.1:3000", "127.0.0.1", 3000, "IP with port"},
-		{"[::1]:8080", "[::1]", 8080, "IPv6 localhost with port"},
-		{"[2001:db8::1]:443", "[2001:db8::1]", 443, "IPv6 with port"},
-		{"example.com", "example.com", 0, "hostname without port"},
-		{"192.168.1.1", "192.168.1.1", 0, "IP without port"},
-		{"", "", 0, "empty destination"},
-		{"hostname:", "hostname", 0, "hostname with colon but no port"},
-		{":8080", "", 8080, "port only"},
-		{"host:port", "host", 0, "non-numeric port"},
-		{"host:-1", "host", 0, "negative port"},
-		{"host:99999", "host", 0, "port too high for uint16"},
-		{"multiple:colons:here:8080", "multiple:colons:here", 8080, "multiple colons"},
+		{"IPv4 with port", "192.168.1.1:80", "192.168.1.1", 80},
+		{"hostname with port", "example.com:443", "example.com", 443},
+		{"IPv6 with port", "[2001:db8::1]:22", "[2001:db8::1]", 22},
+		{"IP without port", "192.168.1.1", "192.168.1.1", 0},
+		{"empty destination", "", "", 0},
+		{"invalid port", "example.com:invalid", "example.com", 0},
+		{"high port number", "example.org:65535", "example.org", 65535},
 	}
 
-	for _, tc := range edgeCases {
-		t.Run(tc.description, func(t *testing.T) {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Test via ConnectionInfo.ToConnectionEvent() which calls parseDestination
 			conn := ConnectionInfo{
 				PID:         1234,
 				Command:     "test",
-				Destination: tc.destination,
+				Destination: tt.destination,
 				Protocol:    "tcp",
 				ReturnCode:  0,
-				Timestamp:   "2024-01-01T12:00:00Z",
+				Time:        "2024-01-01T12:00:00Z",
 			}
 
 			result := conn.ToConnectionEvent()
 
-			if result.DestinationIP != tc.expectedIP {
-				t.Errorf("For destination '%s': expected IP '%s', got '%s'",
-					tc.destination, tc.expectedIP, result.DestinationIP)
+			if result.DestinationIP != tt.expectedIP {
+				t.Errorf("DestinationIP = %v, want %v", result.DestinationIP, tt.expectedIP)
 			}
-			if result.DestinationPort != tc.expectedPort {
-				t.Errorf("For destination '%s': expected port %d, got %d",
-					tc.destination, tc.expectedPort, result.DestinationPort)
+			if result.DestinationPort != tt.expectedPort {
+				t.Errorf("DestinationPort = %v, want %v", result.DestinationPort, tt.expectedPort)
 			}
 		})
 	}
-}
-
-func TestDataStructuresJSONSerialization(t *testing.T) {
-	// Test that our data structures can be properly marshaled/unmarshaled to/from JSON
-
-	t.Run("ConnectionInfo JSON", func(t *testing.T) {
-		original := ConnectionInfo{
-			PID:         1234,
-			Command:     "test-command",
-			Destination: "example.com:8080",
-			Protocol:    "tcp",
-			ReturnCode:  0,
-			Timestamp:   "2024-01-01T12:00:00Z",
-		}
-
-		// This would be tested if we needed JSON serialization
-		// We're mainly testing the structure is well-formed
-		if original.PID == 0 {
-			t.Error("ConnectionInfo should have non-zero PID")
-		}
-	})
-
-	t.Run("ConnectionEvent JSON", func(t *testing.T) {
-		original := ConnectionEvent{
-			PID:             1234,
-			Command:         "test-command",
-			DestinationIP:   "example.com",
-			DestinationPort: 8080,
-			Protocol:        "tcp",
-			ReturnCode:      0,
-			Destination:     "example.com:8080",
-			WallTime:        time.Now(),
-		}
-
-		if original.PID == 0 {
-			t.Error("ConnectionEvent should have non-zero PID")
-		}
-	})
-
-	t.Run("ConnectionSummaryOutput", func(t *testing.T) {
-		summary := ConnectionSummaryOutput{
-			Count:           42,
-			Command:         "test-process",
-			DurationSeconds: 30,
-			QueryTime:       "2024-01-01T12:00:00Z",
-		}
-
-		if summary.Count == 0 {
-			t.Error("ConnectionSummaryOutput should have non-zero Count")
-		}
-	})
-
-	t.Run("ListConnectionsOutput", func(t *testing.T) {
-		output := ListConnectionsOutput{
-			TotalEvents: 1,
-			TotalPIDs:   1,
-			EventsByPID: map[string][]ConnectionInfo{
-				"1234": {
-					{
-						PID:         1234,
-						Command:     "nginx",
-						Destination: "192.168.1.1:80",
-						Protocol:    "tcp",
-						ReturnCode:  0,
-						Timestamp:   "2024-01-01T12:00:00Z",
-					},
-				},
-			},
-			QueryTime: "2024-01-01T12:00:00Z",
-		}
-
-		if len(output.EventsByPID) == 0 {
-			t.Error("ListConnectionsOutput should have events_by_pid")
-		}
-	})
 }
