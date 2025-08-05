@@ -8,12 +8,23 @@ import (
 
 // ConnectionInfo represents connection event information (matches server output)
 type ConnectionInfo struct {
-	PID         uint32  `json:"pid"`
-	Command     string  `json:"command"`
-	Destination string  `json:"destination"`
-	Protocol    string  `json:"protocol"`
-	ReturnCode  int32   `json:"return_code"`
-	Timestamp   float64 `json:"timestamp"`
+	AddressFamily   uint16  `json:"address_family"`
+	Command         string  `json:"command"`
+	Destination     string  `json:"destination"`
+	DestinationIP   string  `json:"destination_ip"`
+	DestinationPort uint16  `json:"destination_port"`
+	ID              string  `json:"id"`
+	PID             uint32  `json:"pid"`
+	Protocol        string  `json:"protocol"`
+	RawIPv4         uint32  `json:"raw_ipv4"`
+	RawIPv6         []int   `json:"raw_ipv6"`
+	RawProtocol     uint16  `json:"raw_protocol"`
+	RawSocktype     uint16  `json:"raw_socktype"`
+	ReturnCode      int32   `json:"return_code"`
+	SocketType      string  `json:"socket_type"`
+	Time            string  `json:"time"`           // ISO 8601 timestamp
+	Timestamp       float64 `json:"timestamp"`      // Nanoseconds since epoch (fallback)
+	Type            string  `json:"type"`
 }
 
 // ConnectionSummaryOutput matches the server's connection summary output
@@ -85,14 +96,31 @@ type PacketDropListOutput struct {
 
 // Convert ConnectionInfo to ConnectionEvent for backward compatibility
 func (ci ConnectionInfo) ToConnectionEvent() ConnectionEvent {
-	// Convert timestamp from Unix time (float64) to time.Time
-	wallTime := time.Unix(int64(ci.Timestamp), 0)
+	// Use the Time field (ISO 8601) if available, fallback to Timestamp
+	var wallTime time.Time
+	if ci.Time != "" {
+		// Parse ISO 8601 timestamp
+		if parsed, err := time.Parse(time.RFC3339Nano, ci.Time); err == nil {
+			wallTime = parsed
+		} else {
+			// Fallback to timestamp field (treat as nanoseconds since epoch)
+			wallTime = time.Unix(0, int64(ci.Timestamp))
+		}
+	} else {
+		// Fallback to timestamp field (treat as nanoseconds since epoch)
+		wallTime = time.Unix(0, int64(ci.Timestamp))
+	}
 
-	// Parse destination to extract IP and port
+	// Use the provided destination info directly from API or parse if needed
 	var destIP string
 	var destPort uint16
 
-	if ci.Destination != "" {
+	if ci.DestinationIP != "" && ci.DestinationPort > 0 {
+		// Use the parsed values from API
+		destIP = ci.DestinationIP
+		destPort = ci.DestinationPort
+	} else if ci.Destination != "" {
+		// Fallback to parsing destination string
 		destIP, destPort = parseDestination(ci.Destination)
 	}
 
@@ -105,7 +133,7 @@ func (ci ConnectionInfo) ToConnectionEvent() ConnectionEvent {
 		Destination:     ci.Destination,
 		Protocol:        ci.Protocol,
 		WallTime:        wallTime,
-		TimestampNS:     uint64(ci.Timestamp * 1e9), // Convert to nanoseconds
+		TimestampNS:     uint64(wallTime.UnixNano()),
 	}
 }
 
