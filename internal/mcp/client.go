@@ -39,6 +39,8 @@ func (c *MCPClient) StartInteractiveMode(ctx context.Context) error {
 	fmt.Println("Available commands:")
 	fmt.Println("  summary      - Get network connection summary")
 	fmt.Println("  list         - List recent connections")
+	fmt.Println("  dropsummary  - Get packet drop summary")
+	fmt.Println("  droplist     - List recent packet drops")
 	fmt.Println("  analyze      - Analyze connection patterns")
 	fmt.Println("  insights     - Get AI insights about network behavior")
 	fmt.Println("  tools        - Show available MCP tools")
@@ -97,6 +99,12 @@ func (c *MCPClient) handleCommand(ctx context.Context, input string) error {
 	case "list":
 		return c.handleListCommand(ctx, parts[1:])
 
+	case "dropsummary":
+		return c.handleDropSummaryCommand(ctx, parts[1:])
+
+	case "droplist":
+		return c.handleDropListCommand(ctx, parts[1:])
+
 	case "analyze":
 		return c.handleAnalyzeCommand(ctx, parts[1:])
 
@@ -112,19 +120,31 @@ func (c *MCPClient) handleCommand(ctx context.Context, input string) error {
 func (c *MCPClient) showHelp() {
 	fmt.Println("Network Telemetry MCP Commands:")
 	fmt.Println()
-	fmt.Println("summary [--pid <pid>] [--process <name>] [--duration <seconds>]")
+	fmt.Println("summary [--pid <pid>] [--process <n>] [--duration <seconds>]")
 	fmt.Println("  Get a summary of network connections")
 	fmt.Println("  Examples:")
 	fmt.Println("    summary --pid 1234")
 	fmt.Println("    summary --process curl --duration 120")
 	fmt.Println()
-	fmt.Println("list [--pid <pid>] [--process <name>] [--max-events <count>]")
+	fmt.Println("list [--pid <pid>] [--process <n>] [--max-events <count>]")
 	fmt.Println("  List recent network connection events")
 	fmt.Println("  Examples:")
 	fmt.Println("    list")
 	fmt.Println("    list --process nginx --max-events 20")
 	fmt.Println()
-	fmt.Println("analyze [--pid <pid>] [--process <name>]")
+	fmt.Println("dropsummary [--pid <pid>] [--process <n>] [--duration <seconds>]")
+	fmt.Println("  Get a summary of packet drop events")
+	fmt.Println("  Examples:")
+	fmt.Println("    dropsummary --pid 1234")
+	fmt.Println("    dropsummary --process nginx --duration 300")
+	fmt.Println()
+	fmt.Println("droplist [--pid <pid>] [--process <n>] [--max-events <count>]")
+	fmt.Println("  List recent packet drop events")
+	fmt.Println("  Examples:")
+	fmt.Println("    droplist")
+	fmt.Println("    droplist --process nginx --max-events 15")
+	fmt.Println()
+	fmt.Println("analyze [--pid <pid>] [--process <n>]")
 	fmt.Println("  Analyze network connection patterns")
 	fmt.Println("  Examples:")
 	fmt.Println("    analyze --process ssh")
@@ -141,6 +161,8 @@ func (c *MCPClient) showTools() {
 	fmt.Println()
 	fmt.Println("• get_network_summary: Get a summary of network connections for a specific process or PID")
 	fmt.Println("• list_connections: List recent network connection events")
+	fmt.Println("• get_packet_drop_summary: Get a summary of packet drop events for a specific process or PID")
+	fmt.Println("• list_packet_drops: List recent packet drop events")
 	fmt.Println("• analyze_patterns: Analyze network connection patterns and provide insights")
 	fmt.Println("• ai_insights: Get AI-powered insights about network behavior using OpenAI GPT-3.5-turbo")
 }
@@ -286,6 +308,10 @@ func (c *MCPClient) RunSingleCommand(ctx context.Context, toolName string, argum
 		return c.server.handleGetNetworkSummary(ctx, nil, params)
 	case "list_connections":
 		return c.server.handleListConnections(ctx, nil, params)
+	case "get_packet_drop_summary":
+		return c.server.handleGetPacketDropSummary(ctx, nil, params)
+	case "list_packet_drops":
+		return c.server.handleListPacketDrops(ctx, nil, params)
 	case "analyze_patterns":
 		return c.server.handleAnalyzePatterns(ctx, nil, params)
 	case "ai_insights":
@@ -293,4 +319,48 @@ func (c *MCPClient) RunSingleCommand(ctx context.Context, toolName string, argum
 	default:
 		return nil, fmt.Errorf("unknown tool: %s", toolName)
 	}
+}
+
+// handleDropSummaryCommand processes the dropsummary command
+func (c *MCPClient) handleDropSummaryCommand(ctx context.Context, args []string) error {
+	arguments := c.parseArguments(args)
+
+	params := &mcp.CallToolParamsFor[map[string]any]{
+		Arguments: arguments,
+	}
+
+	result, err := c.server.handleGetPacketDropSummary(ctx, nil, params)
+	if err != nil {
+		return fmt.Errorf("packet drop summary failed: %v", err)
+	}
+
+	for _, content := range result.Content {
+		if textContent, ok := content.(*mcp.TextContent); ok {
+			fmt.Println(textContent.Text)
+		}
+	}
+
+	return nil
+}
+
+// handleDropListCommand processes the droplist command
+func (c *MCPClient) handleDropListCommand(ctx context.Context, args []string) error {
+	arguments := c.parseArguments(args)
+
+	params := &mcp.CallToolParamsFor[map[string]any]{
+		Arguments: arguments,
+	}
+
+	result, err := c.server.handleListPacketDrops(ctx, nil, params)
+	if err != nil {
+		return fmt.Errorf("packet drop list failed: %v", err)
+	}
+
+	for _, content := range result.Content {
+		if textContent, ok := content.(*mcp.TextContent); ok {
+			fmt.Println(textContent.Text)
+		}
+	}
+
+	return nil
 }

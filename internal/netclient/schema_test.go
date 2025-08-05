@@ -289,21 +289,22 @@ func TestDataStructuresJSONSerialization(t *testing.T) {
 
 	t.Run("ConnectionSummaryOutput", func(t *testing.T) {
 		summary := ConnectionSummaryOutput{
-			Total:   42,
-			Command: "test-process",
-			Seconds: 30,
+			Count:           42,
+			Command:         "test-process",
+			DurationSeconds: 30,
+			QueryTime:       "2024-01-01T12:00:00Z",
 		}
 
-		if summary.Total == 0 {
-			t.Error("ConnectionSummaryOutput should have non-zero Total")
+		if summary.Count == 0 {
+			t.Error("ConnectionSummaryOutput should have non-zero Count")
 		}
 	})
 
 	t.Run("ListConnectionsOutput", func(t *testing.T) {
 		output := ListConnectionsOutput{
-			TotalPIDs: 2,
-			Truncated: false,
-			Connections: map[string][]ConnectionInfo{
+			TotalEvents: 1,
+			TotalPIDs:   1,
+			EventsByPID: map[string][]ConnectionInfo{
 				"1234": {
 					{
 						PID:         1234,
@@ -315,10 +316,11 @@ func TestDataStructuresJSONSerialization(t *testing.T) {
 					},
 				},
 			},
+			QueryTime: "2024-01-01T12:00:00Z",
 		}
 
-		if len(output.Connections) == 0 {
-			t.Error("ListConnectionsOutput should have connections")
+		if len(output.EventsByPID) == 0 {
+			t.Error("ListConnectionsOutput should have events_by_pid")
 		}
 	})
 }

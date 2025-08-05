@@ -17,12 +17,12 @@ func FormatConnectionSummary(pid int, processName string, duration int, summary 
 		target = fmt.Sprintf("process '%s'", processName)
 	}
 
-	if summary.Total == 0 {
+	if summary.Count == 0 {
 		return fmt.Sprintf("No network connections found for %s in the last %d seconds", target, duration)
 	}
 
 	return fmt.Sprintf("%s made %d outbound connection attempts over the last %d seconds",
-		target, summary.Total, duration)
+		target, summary.Count, duration)
 }
 
 // FormatConnectionEvents provides a detailed view of connection events

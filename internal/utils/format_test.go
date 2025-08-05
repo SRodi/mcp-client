@@ -21,13 +21,13 @@ func makeEvent(pid int, cmd, ip string, port uint16, proto string, ts uint64) ne
 
 func TestFormatConnectionSummary(t *testing.T) {
 	summary := netclient.ConnectionSummaryOutput{}
-	summary.Total = 0
+	summary.Count = 0
 	out := FormatConnectionSummary(123, "", 60, summary)
 	if out == "" || out[:2] != "No" {
 		t.Errorf("expected no connections message, got: %s", out)
 	}
 
-	summary.Total = 5
+	summary.Count = 5
 	out = FormatConnectionSummary(123, "", 60, summary)
 	if out == "" || out[:3] != "PID" {
 		t.Errorf("expected PID summary, got: %s", out)

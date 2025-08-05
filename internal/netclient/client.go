@@ -90,17 +90,17 @@ func (c *Client) HealthCheck(ctx context.Context) error {
 
 // ConnectionSummaryRequest represents the request body for connection summary
 type ConnectionSummaryRequest struct {
-	PID         int    `json:"pid,omitempty"`
-	Command     string `json:"command,omitempty"`
-	ProcessName string `json:"process_name,omitempty"`
-	Duration    int    `json:"duration"`
+	PID             int    `json:"pid,omitempty"`
+	Command         string `json:"command,omitempty"`
+	ProcessName     string `json:"process_name,omitempty"`
+	DurationSeconds int    `json:"duration_seconds"`
 }
 
 // GetConnectionSummary gets connection statistics using the HTTP REST API
 func (c *Client) GetConnectionSummary(ctx context.Context, pid int, processName string, duration int) (ConnectionSummaryOutput, error) {
 	// Prepare request body
 	reqBody := ConnectionSummaryRequest{
-		Duration: duration,
+		DurationSeconds: duration,
 	}
 
 	if pid > 0 {
@@ -285,6 +285,128 @@ func (c *Client) parseListConnectionsResponse(resp *http.Response) (ListConnecti
 	var listOutput ListConnectionsOutput
 	if err := json.Unmarshal(body, &listOutput); err != nil {
 		return ListConnectionsOutput{}, fmt.Errorf("failed to parse response: %v", err)
+	}
+
+	return listOutput, nil
+}
+
+// GetPacketDropSummary gets packet drop statistics using the HTTP REST API
+func (c *Client) GetPacketDropSummary(ctx context.Context, pid int, processName string, duration int) (PacketDropSummaryOutput, error) {
+	// Prepare request body
+	reqBody := PacketDropSummaryRequest{
+		DurationSeconds: duration,
+	}
+
+	if pid > 0 {
+		reqBody.PID = pid
+	}
+	if processName != "" {
+		reqBody.Command = processName
+		reqBody.ProcessName = processName // For backward compatibility
+	}
+
+	// Marshal request body
+	jsonData, err := json.Marshal(reqBody)
+	if err != nil {
+		return PacketDropSummaryOutput{}, fmt.Errorf("failed to marshal request: %v", err)
+	}
+
+	// Create HTTP request
+	summaryURL := c.baseURL + "/api/packet-drop-summary"
+	req, err := http.NewRequestWithContext(ctx, "POST", summaryURL, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return PacketDropSummaryOutput{}, fmt.Errorf("failed to create request: %v", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	if c.verbose {
+		log.Printf("Calling POST %s with body: %s", summaryURL, string(jsonData))
+	}
+
+	// Make HTTP request
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return PacketDropSummaryOutput{}, fmt.Errorf("HTTP request failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// Read response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return PacketDropSummaryOutput{}, fmt.Errorf("failed to read response: %v", err)
+	}
+
+	if c.verbose {
+		log.Printf("HTTP response status: %d, body: %s", resp.StatusCode, string(body))
+	}
+
+	// Check for HTTP errors
+	if resp.StatusCode != http.StatusOK {
+		var errorResp struct {
+			Error   string `json:"error"`
+			Message string `json:"message"`
+		}
+		if json.Unmarshal(body, &errorResp) == nil {
+			return PacketDropSummaryOutput{}, fmt.Errorf("server error (%d): %s - %s", resp.StatusCode, errorResp.Error, errorResp.Message)
+		}
+		return PacketDropSummaryOutput{}, fmt.Errorf("HTTP error %d: %s", resp.StatusCode, string(body))
+	}
+
+	// Parse response
+	var summary PacketDropSummaryOutput
+	if err := json.Unmarshal(body, &summary); err != nil {
+		return PacketDropSummaryOutput{}, fmt.Errorf("failed to parse response: %v", err)
+	}
+
+	return summary, nil
+}
+
+// ListPacketDrops lists packet drop events using the HTTP REST API
+func (c *Client) ListPacketDrops(ctx context.Context) (PacketDropListOutput, error) {
+	// Create HTTP request
+	listURL := c.baseURL + "/api/list-packet-drops"
+	req, err := http.NewRequestWithContext(ctx, "GET", listURL, nil)
+	if err != nil {
+		return PacketDropListOutput{}, fmt.Errorf("failed to create request: %v", err)
+	}
+
+	if c.verbose {
+		log.Printf("Calling GET %s", listURL)
+	}
+
+	// Make HTTP request
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return PacketDropListOutput{}, fmt.Errorf("HTTP request failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// Read response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return PacketDropListOutput{}, fmt.Errorf("failed to read response: %v", err)
+	}
+
+	if c.verbose {
+		log.Printf("HTTP response status: %d, body: %s", resp.StatusCode, string(body))
+	}
+
+	// Check for HTTP errors
+	if resp.StatusCode != http.StatusOK {
+		var errorResp struct {
+			Error   string `json:"error"`
+			Message string `json:"message"`
+		}
+		if json.Unmarshal(body, &errorResp) == nil {
+			return PacketDropListOutput{}, fmt.Errorf("server error (%d): %s - %s", resp.StatusCode, errorResp.Error, errorResp.Message)
+		}
+		return PacketDropListOutput{}, fmt.Errorf("HTTP error %d: %s", resp.StatusCode, string(body))
+	}
+
+	// Parse response
+	var listOutput PacketDropListOutput
+	if err := json.Unmarshal(body, &listOutput); err != nil {
+		return PacketDropListOutput{}, fmt.Errorf("failed to parse response: %v", err)
 	}
 
 	return listOutput, nil
