@@ -684,11 +684,6 @@ func (s *NetworkMCPServer) handleListPacketDrops(ctx context.Context, session *m
 				continue
 			}
 
-			// Filter out irrelevant packet drop reasons
-			if !isRelevantPacketDropReason(drop.Reason) {
-				continue
-			}
-
 			if count >= maxEvents {
 				break
 			}
@@ -886,47 +881,4 @@ func (s *NetworkMCPServer) handleContextualAnalysis(ctx context.Context, session
 			},
 		},
 	}, nil
-}
-
-// isRelevantPacketDropReason filters packet drop reasons to focus on those relevant for LLM analysis
-// Returns true if the reason indicates a meaningful network issue that should be reported
-func isRelevantPacketDropReason(reason string) bool {
-	// Define reasons that are NOT relevant (normal system behavior)
-	irrelevantReasons := map[string]bool{
-		"SK_FREE":                       true, // Socket cleanup - normal behavior
-		"SKB_DROP_REASON_NOT_SPECIFIED": true, // Generic/unspecified drops
-		"SKB_NOT_DROPPED_YET":           true, // Not actually dropped
-		"SKB_CONSUMED":                  true, // Successfully consumed
-		"SKB_DELIVERED_SOCK":            true, // Successfully delivered
-	}
-
-	// If the reason is in the irrelevant list, filter it out
-	if irrelevantReasons[reason] {
-		return false
-	}
-
-	// Focus on network-related issues that indicate problems:
-	relevantReasons := map[string]bool{
-		"TCP":            true, // TCP protocol issues
-		"UDP":            true, // UDP protocol issues
-		"IP":             true, // IP layer issues
-		"NO_SOCKET":      true, // No socket available
-		"SOCKET_FILTER":  true, // Socket filter dropped
-		"NETFILTER_DROP": true, // Netfilter/iptables dropped
-		"FULL_SOCK":      true, // Socket buffer full
-		"CONGESTION":     true, // Network congestion
-		"TIMEOUT":        true, // Network timeout
-		"CHECKSUM":       true, // Checksum failure
-		"ROUTE":          true, // Routing issues
-		"ARP":            true, // ARP resolution issues
-	}
-
-	// Check if it's a known relevant reason
-	if relevantReasons[reason] {
-		return true
-	}
-
-	// For unknown reasons, err on the side of including them
-	// This ensures we don't miss new/uncommon but potentially important drop reasons
-	return true
 }

@@ -63,7 +63,7 @@ type ConnectionEvent struct {
 type PacketDropInfo struct {
 	PID       uint32  `json:"pid"`
 	Command   string  `json:"command"`
-	Reason    string  `json:"reason"`
+	Reason    string  `json:"drop_reason"`
 	Timestamp float64 `json:"timestamp"`
 }
 
