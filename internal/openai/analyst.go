@@ -13,9 +13,9 @@ type ContextualNetworkAnalyst struct {
 }
 
 // NewContextualNetworkAnalyst creates a new contextual network analyst
-func NewContextualNetworkAnalyst(mcpExecutor MCPToolExecutor) *ContextualNetworkAnalyst {
+func NewContextualNetworkAnalyst(mcpExecutor MCPToolExecutor, verbose bool) *ContextualNetworkAnalyst {
 	analyst := &ContextualNetworkAnalyst{
-		conversationManager: NewConversationManager(mcpExecutor),
+		conversationManager: NewConversationManager(mcpExecutor, verbose),
 		mcpExecutor:         mcpExecutor,
 	}
 
@@ -66,7 +66,7 @@ When a user asks about network behavior, automatically gather data from multiple
 func (cna *ContextualNetworkAnalyst) AnalyzeNetworkQuery(ctx context.Context, query string) (string, error) {
 	// Enhance the query with context about what the user might want
 	enhancedQuery := cna.enhanceUserQuery(query)
-	
+
 	// Process the message with function calling capabilities
 	response, err := cna.conversationManager.ProcessMessage(ctx, enhancedQuery)
 	if err != nil {
@@ -79,32 +79,32 @@ func (cna *ContextualNetworkAnalyst) AnalyzeNetworkQuery(ctx context.Context, qu
 // enhanceUserQuery adds context to help the AI understand what tools to use
 func (cna *ContextualNetworkAnalyst) enhanceUserQuery(query string) string {
 	queryLower := strings.ToLower(query)
-	
+
 	// Add helpful context based on query content
 	if strings.Contains(queryLower, "all available tools") || strings.Contains(queryLower, "use all tools") {
 		return query + "\n\nIMPORTANT: You MUST use ALL 5 core analysis tools for comprehensive analysis. Call these tools in this EXACT order: 1) get_network_summary with duration=300, 2) list_connections, 3) get_packet_drop_summary with duration=300, 4) list_packet_drops (MANDATORY even if no drops found), 5) analyze_patterns with duration=300. Do not skip ANY tools. Each tool provides unique data."
 	}
-	
+
 	if strings.Contains(queryLower, "comprehensive") || strings.Contains(queryLower, "complete analysis") {
 		return query + "\n\nPlease use multiple tools (at least get_network_summary, list_connections, get_packet_drop_summary, and analyze_patterns) to provide comprehensive data."
 	}
-	
+
 	if strings.Contains(queryLower, "summary") || strings.Contains(queryLower, "overview") {
 		return query + "\n\nPlease use multiple network analysis tools including get_network_summary, list_connections, and get_packet_drop_summary to provide comprehensive data."
 	}
-	
+
 	if strings.Contains(queryLower, "drop") || strings.Contains(queryLower, "loss") || strings.Contains(queryLower, "packet") {
 		return query + "\n\nPlease check for packet drops and analyze any connectivity issues using get_packet_drop_summary and list_packet_drops tools."
 	}
-	
+
 	if strings.Contains(queryLower, "pattern") || strings.Contains(queryLower, "behavior") {
 		return query + "\n\nPlease analyze connection patterns using get_network_summary, list_connections, and analyze_patterns tools."
 	}
-	
+
 	if strings.Contains(queryLower, "connection") || strings.Contains(queryLower, "network") {
 		return query + "\n\nPlease gather network connection data using get_network_summary and list_connections tools, then analyze the results."
 	}
-	
+
 	// Default enhancement
 	return query + "\n\nPlease use appropriate network analysis tools (at least 2-3 different tools) to gather relevant data before providing insights."
 }
@@ -112,7 +112,7 @@ func (cna *ContextualNetworkAnalyst) enhanceUserQuery(query string) string {
 // AnalyzeProcess provides focused analysis for a specific process
 func (cna *ContextualNetworkAnalyst) AnalyzeProcess(ctx context.Context, processName string, pid int, duration int) (string, error) {
 	var query string
-	
+
 	if processName != "" {
 		query = fmt.Sprintf("Please analyze the network behavior of process '%s' over the last %d seconds. I want to understand its connection patterns, any issues, and optimization opportunities.", processName, duration)
 	} else if pid > 0 {
@@ -120,7 +120,7 @@ func (cna *ContextualNetworkAnalyst) AnalyzeProcess(ctx context.Context, process
 	} else {
 		query = fmt.Sprintf("Please analyze overall network activity over the last %d seconds. Show me connection patterns, any issues, and recommendations.", duration)
 	}
-	
+
 	return cna.AnalyzeNetworkQuery(ctx, query)
 }
 

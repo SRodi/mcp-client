@@ -838,7 +838,7 @@ func (s *NetworkMCPServer) handleContextualAnalysis(ctx context.Context, session
 	}
 
 	// Create the intelligent network analyst
-	analyst := openai.NewContextualNetworkAnalyst(s)
+	analyst := openai.NewContextualNetworkAnalyst(s, s.verbose)
 
 	// If specific process parameters are provided, do focused analysis
 	if processName != "" || pid > 0 {

@@ -10,12 +10,12 @@ import (
 )
 
 type ChatRequest struct {
-	Model       string              `json:"model"`
-	Messages    []ChatMessage       `json:"messages"`
-	Functions   []FunctionDefinition `json:"functions,omitempty"`
+	Model        string               `json:"model"`
+	Messages     []ChatMessage        `json:"messages"`
+	Functions    []FunctionDefinition `json:"functions,omitempty"`
 	FunctionCall interface{}          `json:"function_call,omitempty"`
-	Tools       []Tool              `json:"tools,omitempty"`
-	ToolChoice  interface{}         `json:"tool_choice,omitempty"`
+	Tools        []Tool               `json:"tools,omitempty"`
+	ToolChoice   interface{}          `json:"tool_choice,omitempty"`
 }
 
 type Tool struct {
@@ -109,9 +109,9 @@ type ConversationManager struct {
 }
 
 // NewConversationManager creates a new conversation manager with function calling
-func NewConversationManager(mcpExecutor MCPToolExecutor) *ConversationManager {
+func NewConversationManager(mcpExecutor MCPToolExecutor, verbose bool) *ConversationManager {
 	return &ConversationManager{
-		functionManager: NewFunctionCallManager(mcpExecutor),
+		functionManager: NewFunctionCallManager(mcpExecutor, verbose),
 		messages:        make([]ChatMessage, 0),
 		model:           "gpt-4o-mini", // Use a more capable model for function calling
 	}
@@ -154,7 +154,7 @@ func (cm *ConversationManager) ProcessMessage(ctx context.Context, userMessage s
 	}
 
 	choice := response.Choices[0]
-	
+
 	// Add assistant's response to conversation
 	cm.messages = append(cm.messages, choice.Message)
 
@@ -188,9 +188,9 @@ func (cm *ConversationManager) sendChatRequest(ctx context.Context) (*ChatRespon
 	}
 
 	reqBody := ChatRequest{
-		Model:    cm.model,
-		Messages: cm.messages,
-		Tools:    tools,
+		Model:      cm.model,
+		Messages:   cm.messages,
+		Tools:      tools,
 		ToolChoice: "auto", // Let the model decide when to call functions
 	}
 
@@ -253,7 +253,7 @@ func (cm *ConversationManager) handleFunctionCalls(ctx context.Context, toolCall
 	}
 
 	choice := response.Choices[0]
-	
+
 	// Add the final response to conversation
 	cm.messages = append(cm.messages, choice.Message)
 

@@ -50,13 +50,15 @@ type MCPToolDiscovery interface {
 type FunctionCallManager struct {
 	mcpExecutor MCPToolExecutor
 	functions   []FunctionDefinition
+	verbose     bool
 }
 
 // NewFunctionCallManager creates a new function call manager with automatic tool discovery
-func NewFunctionCallManager(mcpExecutor MCPToolExecutor) *FunctionCallManager {
+func NewFunctionCallManager(mcpExecutor MCPToolExecutor, verbose bool) *FunctionCallManager {
 	fm := &FunctionCallManager{
 		mcpExecutor: mcpExecutor,
 		functions:   make([]FunctionDefinition, 0),
+		verbose:     verbose,
 	}
 
 	// If the executor also implements tool discovery, auto-discover tools
@@ -78,7 +80,9 @@ func (fm *FunctionCallManager) discoverMCPTools(discovery MCPToolDiscovery) {
 		// Convert MCP tool to OpenAI function definition
 		functionDef := fm.convertMCPToolToFunction(toolName, tool)
 		fm.functions = append(fm.functions, functionDef)
-		fmt.Printf("  - %s: %s\n", toolName, tool.Description)
+		if fm.verbose {
+			fmt.Printf("  - %s: %s\n", toolName, tool.Description)
+		}
 	}
 }
 
