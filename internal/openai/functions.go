@@ -58,7 +58,7 @@ func NewFunctionCallManager(mcpExecutor MCPToolExecutor) *FunctionCallManager {
 		mcpExecutor: mcpExecutor,
 		functions:   make([]FunctionDefinition, 0),
 	}
-	
+
 	// If the executor also implements tool discovery, auto-discover tools
 	if toolDiscovery, ok := mcpExecutor.(MCPToolDiscovery); ok {
 		fm.discoverMCPTools(toolDiscovery)
@@ -66,29 +66,27 @@ func NewFunctionCallManager(mcpExecutor MCPToolExecutor) *FunctionCallManager {
 		// Fallback: register known tools manually
 		fm.registerKnownMCPTools()
 	}
-	
+
 	return fm
 }
 
 // discoverMCPTools automatically discovers MCP tools and converts them to OpenAI functions
 func (fm *FunctionCallManager) discoverMCPTools(discovery MCPToolDiscovery) {
 	tools := discovery.GetRegisteredTools()
-	
-	fmt.Printf("DEBUG: Discovering %d MCP tools for OpenAI function calling:\n", len(tools))
+
 	for toolName, tool := range tools {
 		// Convert MCP tool to OpenAI function definition
 		functionDef := fm.convertMCPToolToFunction(toolName, tool)
 		fm.functions = append(fm.functions, functionDef)
 		fmt.Printf("  - %s: %s\n", toolName, tool.Description)
 	}
-	fmt.Printf("DEBUG: Total %d functions registered for OpenAI\n", len(fm.functions))
 }
 
 // convertMCPToolToFunction converts an MCP tool definition to OpenAI function format
 func (fm *FunctionCallManager) convertMCPToolToFunction(toolName string, tool *mcp.Tool) FunctionDefinition {
 	// Convert JSON schema to OpenAI parameters format
 	parameters := fm.convertJSONSchemaToOpenAI(tool.InputSchema)
-	
+
 	return FunctionDefinition{
 		Name:        toolName,
 		Description: tool.Description,
@@ -205,7 +203,7 @@ func (fm *FunctionCallManager) ExecuteFunction(ctx context.Context, functionCall
 // ExecuteFunctions executes multiple function calls and returns their results
 func (fm *FunctionCallManager) ExecuteFunctions(ctx context.Context, functionCalls []ToolCall) ([]ToolCallResult, error) {
 	results := make([]ToolCallResult, 0, len(functionCalls))
-	
+
 	for _, call := range functionCalls {
 		result, err := fm.ExecuteFunction(ctx, call)
 		if err != nil {
@@ -219,6 +217,6 @@ func (fm *FunctionCallManager) ExecuteFunctions(ctx context.Context, functionCal
 			results = append(results, *result)
 		}
 	}
-	
+
 	return results, nil
 }
