@@ -8,29 +8,40 @@ import (
 
 // ConnectionInfo represents connection event information (matches server output)
 type ConnectionInfo struct {
-	PID         uint32 `json:"pid"`
-	Command     string `json:"command"`
-	Destination string `json:"destination"`
-	Protocol    string `json:"protocol"`
-	ReturnCode  int32  `json:"return_code"`
-	Timestamp   string `json:"timestamp"`
+	AddressFamily   uint16  `json:"address_family"`
+	Command         string  `json:"command"`
+	Destination     string  `json:"destination"`
+	DestinationIP   string  `json:"destination_ip"`
+	DestinationPort uint16  `json:"destination_port"`
+	ID              string  `json:"id"`
+	PID             uint32  `json:"pid"`
+	Protocol        string  `json:"protocol"`
+	RawIPv4         uint32  `json:"raw_ipv4"`
+	RawIPv6         []int   `json:"raw_ipv6"`
+	RawProtocol     uint16  `json:"raw_protocol"`
+	RawSocktype     uint16  `json:"raw_socktype"`
+	ReturnCode      int32   `json:"return_code"`
+	SocketType      string  `json:"socket_type"`
+	Time            string  `json:"time"`           // ISO 8601 timestamp (primary)
+	Timestamp       float64 `json:"timestamp"`      // Raw timestamp from server (fallback)
+	Type            string  `json:"type"`
 }
 
 // ConnectionSummaryOutput matches the server's connection summary output
 type ConnectionSummaryOutput struct {
-	Total   int    `json:"total_attempts"`
-	PID     int    `json:"pid,omitempty"`
-	Command string `json:"command,omitempty"`
-	Seconds int    `json:"duration"`
-	Message string `json:"message,omitempty"`
+	Count           int    `json:"count"`
+	PID             int    `json:"pid,omitempty"`
+	Command         string `json:"command,omitempty"`
+	DurationSeconds int    `json:"duration_seconds"`
+	QueryTime       string `json:"query_time,omitempty"`
 }
 
 // ListConnectionsOutput matches the server's list connections output
 type ListConnectionsOutput struct {
+	TotalEvents int                         `json:"total_events"`
 	TotalPIDs   int                         `json:"total_pids"`
-	Connections map[string][]ConnectionInfo `json:"connections"`
-	Truncated   bool                        `json:"truncated"`
-	Message     string                      `json:"message,omitempty"`
+	EventsByPID map[string][]ConnectionInfo `json:"events_by_pid"`
+	QueryTime   string                      `json:"query_time,omitempty"`
 }
 
 // Legacy ConnectionEvent for backward compatibility with existing code
@@ -48,15 +59,68 @@ type ConnectionEvent struct {
 	WallTime        time.Time `json:"wall_time"`
 }
 
+// PacketDropInfo represents packet drop event information
+type PacketDropInfo struct {
+	PID       uint32  `json:"pid"`
+	Command   string  `json:"command"`
+	Reason    string  `json:"reason"`
+	Timestamp float64 `json:"timestamp"`
+}
+
+// PacketDropSummaryRequest represents the request body for packet drop summary
+type PacketDropSummaryRequest struct {
+	PID             int    `json:"pid,omitempty"`
+	Command         string `json:"command,omitempty"`
+	ProcessName     string `json:"process_name,omitempty"`
+	DurationSeconds int    `json:"duration_seconds"`
+}
+
+// PacketDropSummaryOutput matches the server's packet drop summary output
+type PacketDropSummaryOutput struct {
+	Count           int    `json:"count"`
+	PID             int    `json:"pid,omitempty"`
+	Command         string `json:"command,omitempty"`
+	DurationSeconds int    `json:"duration_seconds"`
+	QueryTime       string `json:"query_time,omitempty"`
+	Message         string `json:"message,omitempty"`
+}
+
+// PacketDropListOutput matches the server's packet drop list output
+type PacketDropListOutput struct {
+	TotalEvents int                         `json:"total_events"`
+	TotalPIDs   int                         `json:"total_pids"`
+	EventsByPID map[string][]PacketDropInfo `json:"events_by_pid"`
+	QueryTime   string                      `json:"query_time,omitempty"`
+	Message     string                      `json:"message,omitempty"`
+}
+
 // Convert ConnectionInfo to ConnectionEvent for backward compatibility
 func (ci ConnectionInfo) ToConnectionEvent() ConnectionEvent {
-	wallTime, _ := time.Parse("2006-01-02T15:04:05Z", ci.Timestamp)
+	// Use the Time field (ISO 8601) if available, fallback to Timestamp
+	var wallTime time.Time
+	if ci.Time != "" {
+		// Parse ISO 8601 timestamp
+		if parsed, err := time.Parse(time.RFC3339Nano, ci.Time); err == nil {
+			wallTime = parsed
+		} else {
+			// Fallback to timestamp field (treat as nanoseconds since epoch)
+			wallTime = time.Unix(0, int64(ci.Timestamp))
+		}
+	} else {
+		// Fallback to timestamp field (treat as nanoseconds since epoch)
+		wallTime = time.Unix(0, int64(ci.Timestamp))
+	}
 
-	// Parse destination to extract IP and port
+	// Use the provided destination info directly from API or parse if needed
 	var destIP string
 	var destPort uint16
 
-	if ci.Destination != "" {
+	if ci.DestinationIP != "" && ci.DestinationPort > 0 {
+		// Use the parsed values from API
+		destIP = ci.DestinationIP
+		destPort = ci.DestinationPort
+	} else if ci.Destination != "" {
+		// Fallback to parsing destination string
 		destIP, destPort = parseDestination(ci.Destination)
 	}
 
@@ -69,6 +133,7 @@ func (ci ConnectionInfo) ToConnectionEvent() ConnectionEvent {
 		Destination:     ci.Destination,
 		Protocol:        ci.Protocol,
 		WallTime:        wallTime,
+		TimestampNS:     uint64(wallTime.UnixNano()),
 	}
 }
 

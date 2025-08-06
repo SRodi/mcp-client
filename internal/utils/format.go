@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/srodi/netspy/internal/netclient"
 )
@@ -17,12 +18,12 @@ func FormatConnectionSummary(pid int, processName string, duration int, summary 
 		target = fmt.Sprintf("process '%s'", processName)
 	}
 
-	if summary.Total == 0 {
+	if summary.Count == 0 {
 		return fmt.Sprintf("No network connections found for %s in the last %d seconds", target, duration)
 	}
 
 	return fmt.Sprintf("%s made %d outbound connection attempts over the last %d seconds",
-		target, summary.Total, duration)
+		target, summary.Count, duration)
 }
 
 // FormatConnectionEvents provides a detailed view of connection events
@@ -46,11 +47,34 @@ func FormatConnectionEvents(events []netclient.ConnectionEvent, maxEvents int) s
 
 	for i := 0; i < limit; i++ {
 		event := events[i]
-		sb.WriteString(fmt.Sprintf("  %s | %s:%d | %s | %s\n",
-			event.WallTime.Format("15:04:05"),
-			event.DestinationIP,
-			event.DestinationPort,
-			event.Protocol,
+		// Format timestamp to show both date and time for better context
+		timeStr := event.WallTime.Format("01/02 15:04:05")
+		// If it's today, just show the time
+		now := time.Now()
+		if event.WallTime.Format("2006-01-02") == now.Format("2006-01-02") {
+			timeStr = event.WallTime.Format("15:04:05")
+		}
+		
+		// Handle cases where destination is empty (e.g., Unix sockets)
+		var destStr string
+		if event.DestinationIP != "" && event.DestinationPort > 0 {
+			destStr = fmt.Sprintf("%s:%d", event.DestinationIP, event.DestinationPort)
+		} else if event.Destination != "" {
+			destStr = event.Destination
+		} else {
+			destStr = "(local socket)"
+		}
+		
+		// Clean up protocol names
+		protocol := event.Protocol
+		if protocol == "Unknown(0)" {
+			protocol = "UNIX"
+		}
+		
+		sb.WriteString(fmt.Sprintf("  %s | %s | %s | %s\n",
+			timeStr,
+			destStr,
+			protocol,
 			event.Command))
 	}
 
