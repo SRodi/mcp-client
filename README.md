@@ -84,6 +84,12 @@ Execute specific MCP tools directly:
 
 # Get AI insights (requires summary text)
 ./netspy --tool ai_insights --summary-text "nginx made 25 connections in 300 seconds"
+
+# Get packet drop summary
+./netspy --tool get_packet_drop_summary --process nginx --duration 300
+
+# List packet drops
+./netspy --tool list_packet_drops --pid 1234 --max-events 10
 ```
 
 ### Quick Start
@@ -115,6 +121,8 @@ The integrated MCP server provides these tools:
 - **list_connections**: List recent network connection events with filtering
 - **analyze_patterns**: Analyze connection patterns and provide insights
 - **ai_insights**: Generate AI-powered insights using OpenAI GPT-3.5-turbo
+- **get_packet_drop_summary**: Get summary of packet drop events for processes
+- **list_packet_drops**: List recent packet drop events with filtering
 
 ## Command Line Options
 
@@ -161,6 +169,15 @@ Available commands:
 
 netspy-mcp> summary --process curl
 Process 'curl' made 5 outbound connection attempts over the last 60 seconds
+
+netspy-mcp> list --max-events 5
+Recent connection events (15 total):
+  21:05:53 | 127.0.0.1:8080 | TCP | netspy
+  21:03:38 | (local socket) | UNIX | snapd
+  21:01:08 | (local socket) | UNIX | snapd
+  20:58:42 | 192.168.120.2:53 | UDP | systemd-resolve
+  20:56:15 | 172.217.164.78:443 | TCP | curl
+  ... and 10 more events
 
 netspy-mcp> analyze --process curl
 Connection Analysis:
