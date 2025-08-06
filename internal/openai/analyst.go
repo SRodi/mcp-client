@@ -6,15 +6,15 @@ import (
 	"strings"
 )
 
-// IntelligentNetworkAnalyst provides AI-powered network analysis with tool integration
-type IntelligentNetworkAnalyst struct {
+// ContextualNetworkAnalyst provides AI-powered network analysis with tool integration
+type ContextualNetworkAnalyst struct {
 	conversationManager *ConversationManager
 	mcpExecutor         MCPToolExecutor
 }
 
-// NewIntelligentNetworkAnalyst creates a new intelligent network analyst
-func NewIntelligentNetworkAnalyst(mcpExecutor MCPToolExecutor) *IntelligentNetworkAnalyst {
-	analyst := &IntelligentNetworkAnalyst{
+// NewContextualNetworkAnalyst creates a new contextual network analyst
+func NewContextualNetworkAnalyst(mcpExecutor MCPToolExecutor) *ContextualNetworkAnalyst {
+	analyst := &ContextualNetworkAnalyst{
 		conversationManager: NewConversationManager(mcpExecutor),
 		mcpExecutor:         mcpExecutor,
 	}
@@ -25,7 +25,7 @@ func NewIntelligentNetworkAnalyst(mcpExecutor MCPToolExecutor) *IntelligentNetwo
 }
 
 // setupSystemContext configures the system context for network analysis
-func (ina *IntelligentNetworkAnalyst) setupSystemContext() {
+func (cna *ContextualNetworkAnalyst) setupSystemContext() {
 	systemPrompt := `You are an expert network connectivity analyst with access to real-time network telemetry tools. Your role is to:
 
 1. **Analyze Network Behavior**: Examine connection patterns, frequencies, and destinations
@@ -59,16 +59,16 @@ IMPORTANT: For ANY network analysis query, you MUST use multiple tools (minimum 
 
 When a user asks about network behavior, automatically gather data from multiple sources before providing analysis. Always be thorough and comprehensive.`
 
-	ina.conversationManager.AddSystemMessage(systemPrompt)
+	cna.conversationManager.AddSystemMessage(systemPrompt)
 }
 
-// AnalyzeNetworkQuery processes a network analysis query with intelligent tool usage
-func (ina *IntelligentNetworkAnalyst) AnalyzeNetworkQuery(ctx context.Context, query string) (string, error) {
+// AnalyzeNetworkQuery processes a network analysis query with contextual tool usage
+func (cna *ContextualNetworkAnalyst) AnalyzeNetworkQuery(ctx context.Context, query string) (string, error) {
 	// Enhance the query with context about what the user might want
-	enhancedQuery := ina.enhanceUserQuery(query)
+	enhancedQuery := cna.enhanceUserQuery(query)
 	
 	// Process the message with function calling capabilities
-	response, err := ina.conversationManager.ProcessMessage(ctx, enhancedQuery)
+	response, err := cna.conversationManager.ProcessMessage(ctx, enhancedQuery)
 	if err != nil {
 		return "", fmt.Errorf("failed to analyze network query: %v", err)
 	}
@@ -77,7 +77,7 @@ func (ina *IntelligentNetworkAnalyst) AnalyzeNetworkQuery(ctx context.Context, q
 }
 
 // enhanceUserQuery adds context to help the AI understand what tools to use
-func (ina *IntelligentNetworkAnalyst) enhanceUserQuery(query string) string {
+func (cna *ContextualNetworkAnalyst) enhanceUserQuery(query string) string {
 	queryLower := strings.ToLower(query)
 	
 	// Add helpful context based on query content
@@ -110,7 +110,7 @@ func (ina *IntelligentNetworkAnalyst) enhanceUserQuery(query string) string {
 }
 
 // AnalyzeProcess provides focused analysis for a specific process
-func (ina *IntelligentNetworkAnalyst) AnalyzeProcess(ctx context.Context, processName string, pid int, duration int) (string, error) {
+func (cna *ContextualNetworkAnalyst) AnalyzeProcess(ctx context.Context, processName string, pid int, duration int) (string, error) {
 	var query string
 	
 	if processName != "" {
@@ -121,11 +121,11 @@ func (ina *IntelligentNetworkAnalyst) AnalyzeProcess(ctx context.Context, proces
 		query = fmt.Sprintf("Please analyze overall network activity over the last %d seconds. Show me connection patterns, any issues, and recommendations.", duration)
 	}
 	
-	return ina.AnalyzeNetworkQuery(ctx, query)
+	return cna.AnalyzeNetworkQuery(ctx, query)
 }
 
 // GetNetworkHealth provides a comprehensive network health assessment
-func (ina *IntelligentNetworkAnalyst) GetNetworkHealth(ctx context.Context, duration int) (string, error) {
+func (cna *ContextualNetworkAnalyst) GetNetworkHealth(ctx context.Context, duration int) (string, error) {
 	query := fmt.Sprintf(`Please provide a comprehensive network health assessment over the last %d seconds. Include:
 
 1. Connection summary and patterns
@@ -136,11 +136,11 @@ func (ina *IntelligentNetworkAnalyst) GetNetworkHealth(ctx context.Context, dura
 
 Use all relevant tools to gather complete data for this analysis.`, duration)
 
-	return ina.AnalyzeNetworkQuery(ctx, query)
+	return cna.AnalyzeNetworkQuery(ctx, query)
 }
 
 // GetComprehensiveAnalysis provides analysis using ALL available tools
-func (ina *IntelligentNetworkAnalyst) GetComprehensiveAnalysis(ctx context.Context, duration int) (string, error) {
+func (cna *ContextualNetworkAnalyst) GetComprehensiveAnalysis(ctx context.Context, duration int) (string, error) {
 	query := fmt.Sprintf(`COMPREHENSIVE ANALYSIS REQUEST: Analyze network activity over the last %d seconds using ALL available tools.
 
 REQUIRED: You MUST call these tools in this exact order:
@@ -159,21 +159,21 @@ After gathering all data, provide:
 - Security observations
 - Optimization suggestions`, duration)
 
-	return ina.AnalyzeNetworkQuery(ctx, query)
+	return cna.AnalyzeNetworkQuery(ctx, query)
 }
 
 // StartNewConversation clears the conversation history and starts fresh
-func (ina *IntelligentNetworkAnalyst) StartNewConversation() {
-	ina.conversationManager.ClearConversation()
-	ina.setupSystemContext()
+func (cna *ContextualNetworkAnalyst) StartNewConversation() {
+	cna.conversationManager.ClearConversation()
+	cna.setupSystemContext()
 }
 
 // GetConversationHistory returns the current conversation
-func (ina *IntelligentNetworkAnalyst) GetConversationHistory() []ChatMessage {
-	return ina.conversationManager.GetConversationHistory()
+func (cna *ContextualNetworkAnalyst) GetConversationHistory() []ChatMessage {
+	return cna.conversationManager.GetConversationHistory()
 }
 
 // ContinueConversation continues an existing conversation
-func (ina *IntelligentNetworkAnalyst) ContinueConversation(ctx context.Context, message string) (string, error) {
-	return ina.conversationManager.ProcessMessage(ctx, message)
+func (cna *ContextualNetworkAnalyst) ContinueConversation(ctx context.Context, message string) (string, error) {
+	return cna.conversationManager.ProcessMessage(ctx, message)
 }

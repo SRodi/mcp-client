@@ -43,7 +43,7 @@ func (c *MCPClient) StartInteractiveMode(ctx context.Context) error {
 	fmt.Println("  droplist     - List recent packet drops")
 	fmt.Println("  analyze      - Analyze connection patterns")
 	fmt.Println("  insights     - Get AI insights about network behavior")
-	fmt.Println("  intelligent  - Get intelligent AI analysis with automatic tool usage")
+	fmt.Println("  contextual   - Get contextual AI analysis with automatic tool usage")
 	fmt.Println("  tools        - Show available MCP tools")
 	fmt.Println("  help         - Show this help message")
 	fmt.Println("  quit/exit    - Exit interactive mode")
@@ -112,8 +112,8 @@ func (c *MCPClient) handleCommand(ctx context.Context, input string) error {
 	case "insights":
 		return c.handleInsightsCommand(ctx, parts[1:])
 
-	case "intelligent":
-		return c.handleIntelligentCommand(ctx, parts[1:])
+	case "contextual":
+		return c.handleContextualCommand(ctx, parts[1:])
 
 	default:
 		return fmt.Errorf("unknown command: %s (type 'help' for available commands)", command)
@@ -158,12 +158,12 @@ func (c *MCPClient) showHelp() {
 	fmt.Println("  Examples:")
 	fmt.Println("    insights \"curl made 5 connections in 60 seconds\"")
 	fmt.Println()
-	fmt.Println("intelligent <query>")
-	fmt.Println("  Get intelligent AI analysis with automatic tool usage and comprehensive insights")
+	fmt.Println("contextual <query>")
+	fmt.Println("  Get contextual AI analysis with automatic tool usage and comprehensive insights")
 	fmt.Println("  Examples:")
-	fmt.Println("    intelligent \"Analyze the network behavior of process nginx\"")
-	fmt.Println("    intelligent \"What's happening with my network connections?\"")
-	fmt.Println("    intelligent \"Are there any packet drops or connection issues?\"")
+	fmt.Println("    contextual \"Analyze the network behavior of process nginx\"")
+	fmt.Println("    contextual \"What's happening with my network connections?\"")
+	fmt.Println("    contextual \"Are there any packet drops or connection issues?\"")
 }
 
 // showTools displays available MCP tools
@@ -258,10 +258,10 @@ func (c *MCPClient) handleInsightsCommand(ctx context.Context, args []string) er
 	return nil
 }
 
-// handleIntelligentCommand processes the intelligent analysis command
-func (c *MCPClient) handleIntelligentCommand(ctx context.Context, args []string) error {
+// handleContextualCommand processes the contextual analysis command
+func (c *MCPClient) handleContextualCommand(ctx context.Context, args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("intelligent command requires a query as argument")
+		return fmt.Errorf("contextual command requires a query as argument")
 	}
 
 	query := strings.Join(args, " ")
@@ -278,7 +278,7 @@ func (c *MCPClient) handleIntelligentCommand(ctx context.Context, args []string)
 		Arguments: arguments,
 	}
 
-	result, err := c.server.handleIntelligentAnalysis(ctx, nil, params)
+	result, err := c.server.handleContextualAnalysis(ctx, nil, params)
 	if err != nil {
 		return err
 	}
@@ -356,8 +356,8 @@ func (c *MCPClient) RunSingleCommand(ctx context.Context, toolName string, argum
 		return c.server.handleAnalyzePatterns(ctx, nil, params)
 	case "ai_insights":
 		return c.server.handleAIInsights(ctx, nil, params)
-	case "intelligent_analysis":
-		return c.server.handleIntelligentAnalysis(ctx, nil, params)
+	case "contextual_analysis":
+		return c.server.handleContextualAnalysis(ctx, nil, params)
 	default:
 		return nil, fmt.Errorf("unknown tool: %s", toolName)
 	}

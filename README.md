@@ -1,4 +1,4 @@
-# Netspy - Intelligent Network Telemetry Analyzer
+# Netspy - Contextual Network Telemetry Analyzer
 
 A unified CLI tool that provides MCP (Model Context Protocol) server capabilities for real-time network connectivity analytics with AI-powered insights and OpenAI function calling integration.
 
@@ -7,13 +7,13 @@ A unified CLI tool that provides MCP (Model Context Protocol) server capabilitie
 ### Core Capabilities
 - **Real-time Network Monitoring**: Track connection attempts, patterns, and packet drops
 - **Process-Specific Analysis**: Query by PID or process name
-- **AI-Powered Insights**: Advanced OpenAI function calling with intelligent tool orchestration
+- **AI-Powered Insights**: Advanced OpenAI function calling with contextual tool orchestration
 - **Interactive & Programmatic**: Both CLI and API interfaces available
 - **Multiple Output Modes**: Summary, detailed listings, pattern analysis, and AI insights
 
 ### AI Integration Highlights
 - **OpenAI Function Calling**: LLM automatically selects and chains multiple analysis tools
-- **Intelligent Tool Orchestration**: Dynamic tool selection based on query context
+- **Contextual Tool Orchestration**: Dynamic tool selection based on query context
 - **Comprehensive Analysis**: Multi-tool data synthesis for actionable insights
 - **Natural Language Queries**: Ask questions in plain English about network behavior
 
@@ -79,27 +79,27 @@ export OPENAI_API_KEY=your_key_here
 # 3. Generate some network traffic
 curl -s http://google.com
 
-# 4. Use intelligent analysis
+# 4. Use contextual analysis
 ./netspy
-netspy-mcp> intelligent "analyze my system"
+netspy-mcp> contextual "analyze my system"
 ```
 
 ## 💬 Usage Examples
 
-### Intelligent Analysis (Recommended)
+### Contextual Analysis (Recommended)
 
 The AI-powered analysis automatically selects and chains multiple tools:
 
 ```bash
-# Interactive mode with intelligent analysis
+# Interactive mode with contextual analysis
 ./netspy
-netspy-mcp> intelligent "What's happening with my network connections?"
-netspy-mcp> intelligent "Are there any packet drops or connection issues?"
-netspy-mcp> intelligent "Analyze the network behavior of process nginx"
+netspy-mcp> contextual "What's happening with my network connections?"
+netspy-mcp> contextual "Are there any packet drops or connection issues?"
+netspy-mcp> contextual "Analyze the network behavior of process nginx"
 
 # Command line mode
-./netspy --tool intelligent_analysis --query "Analyze my network activity"
-./netspy --tool intelligent_analysis --query "How is curl behaving?" --process curl
+./netspy --tool contextual_analysis --query "Analyze my network activity"
+./netspy --tool contextual_analysis --query "How is curl behaving?" --process curl
 ```
 
 ### Traditional Tool Commands
@@ -128,14 +128,16 @@ netspy-mcp> insights "curl made 5 connections in 60 seconds"
 - **analyze_patterns**: Connection pattern analysis and behavioral insights
 
 ### AI-Powered Tools
-- **intelligent_analysis**: Advanced AI analysis with automatic tool selection
+- **contextual_analysis**: Advanced AI analysis with automatic tool selection
 - **ai_insights**: Generate insights from provided summary text
 
 ## 📊 Sample Output
 
 ### Intelligent Analysis
 ```bash
-netspy-mcp> intelligent "analyze my system"
+### Contextual Analysis
+
+netspy-mcp> contextual "analyze my system"
 
 ### Comprehensive Network Analysis
 
@@ -185,7 +187,7 @@ Recent connection events (15 total):
 
 ### Tool Execution
 - `--tool TOOL`: Run specific MCP tool and exit
-  - Available tools: `get_network_summary`, `list_connections`, `get_packet_drop_summary`, `list_packet_drops`, `analyze_patterns`, `ai_insights`, `intelligent_analysis`
+  - Available tools: `get_network_summary`, `list_connections`, `get_packet_drop_summary`, `list_packet_drops`, `analyze_patterns`, `ai_insights`, `contextual_analysis`
 
 ### Tool Parameters
 - `--pid PID`: Process ID to monitor
@@ -193,7 +195,7 @@ Recent connection events (15 total):
 - `--duration SECONDS`: Duration in seconds (default: 60)
 - `--max-events COUNT`: Maximum events to retrieve (default: 100)
 - `--summary-text TEXT`: Summary text for AI insights
-- `--query TEXT`: Natural language query for intelligent analysis
+- `--query TEXT`: Natural language query for contextual analysis
 
 ## 🤖 AI Function Calling Details
 
@@ -216,7 +218,7 @@ Each tool accepts these parameters (all optional unless specified):
 - `max_events` (integer, default: 10): Maximum number of events to return
 
 **AI Functions:**
-- `query` (string, required for intelligent_analysis): Natural language query
+- `query` (string, required for contextual_analysis): Natural language query
 - `summary_text` (string, required for ai_insights): Summary text to analyze
 
 ### Key Improvements
@@ -229,7 +231,7 @@ Each tool accepts these parameters (all optional unless specified):
    - ✅ All 7 MCP tools registered as OpenAI functions
 
 3. **Static Approach** → **Dynamic Tool Usage**
-   - ✅ LLM intelligently selects and chains multiple tools
+   - ✅ LLM contextually selects and chains multiple tools
    - ✅ Demonstrated: 4 tools used automatically for system analysis
 
 4. **Limited Context** → **Structured Context Management**
@@ -285,8 +287,8 @@ result, err := mcpClient.RunSingleCommand(ctx, "get_network_summary", arguments)
 ```go
 import "github.com/srodi/netspy/internal/openai"
 
-// Create intelligent network analyst
-analyst := openai.NewIntelligentNetworkAnalyst(mcpExecutor)
+// Create contextual network analyst
+analyst := openai.NewContextualNetworkAnalyst(mcpExecutor)
 
 // Analyze with natural language
 analysis, err := analyst.AnalyzeNetworkQuery(ctx, "What's happening with my network?")

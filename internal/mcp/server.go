@@ -132,7 +132,7 @@ func (s *NetworkMCPServer) registerTools() {
 	s.registeredTools["analyze_patterns"] = analyzePatternsTool
 
 	// Register intelligent_analysis tool - this uses OpenAI with function calling
-	intelligentAnalysisTool := &mcp.Tool{
+	contextualAnalysisTool := &mcp.Tool{
 		Name:        "intelligent_analysis",
 		Description: "Get AI-powered network analysis with automatic tool usage and comprehensive insights",
 		InputSchema: &jsonschema.Schema{
@@ -159,8 +159,8 @@ func (s *NetworkMCPServer) registerTools() {
 			Required: []string{"query"},
 		},
 	}
-	mcp.AddTool(s.server, intelligentAnalysisTool, s.handleIntelligentAnalysis)
-	s.registeredTools["intelligent_analysis"] = intelligentAnalysisTool
+	mcp.AddTool(s.server, contextualAnalysisTool, s.handleContextualAnalysis)
+	s.registeredTools["contextual_analysis"] = contextualAnalysisTool
 
 	// Register ai_insights tool
 	aiInsightsTool := &mcp.Tool{
@@ -774,8 +774,8 @@ func (s *NetworkMCPServer) RunSingleCommand(ctx context.Context, toolName string
 		return s.handleAnalyzePatterns(ctx, nil, params)
 	case "ai_insights":
 		return s.handleAIInsights(ctx, nil, params)
-	case "intelligent_analysis":
-		return s.handleIntelligentAnalysis(ctx, nil, params)
+	case "contextual_analysis":
+		return s.handleContextualAnalysis(ctx, nil, params)
 	default:
 		return &mcp.CallToolResult{
 			Content: []mcp.Content{
@@ -787,10 +787,10 @@ func (s *NetworkMCPServer) RunSingleCommand(ctx context.Context, toolName string
 	}
 }
 
-// handleIntelligentAnalysis handles the intelligent_analysis tool call using OpenAI function calling
-func (s *NetworkMCPServer) handleIntelligentAnalysis(ctx context.Context, session *mcp.ServerSession, params *mcp.CallToolParamsFor[map[string]any]) (*mcp.CallToolResult, error) {
+// handleContextualAnalysis handles the contextual_analysis tool call using OpenAI function calling
+func (s *NetworkMCPServer) handleContextualAnalysis(ctx context.Context, session *mcp.ServerSession, params *mcp.CallToolParamsFor[map[string]any]) (*mcp.CallToolResult, error) {
 	if s.verbose {
-		log.Printf("MCP Server: Handling intelligent_analysis request")
+		log.Printf("MCP Server: Handling contextual_analysis request")
 	}
 
 	// Parse arguments
@@ -843,7 +843,7 @@ func (s *NetworkMCPServer) handleIntelligentAnalysis(ctx context.Context, sessio
 	}
 
 	// Create the intelligent network analyst
-	analyst := openai.NewIntelligentNetworkAnalyst(s)
+	analyst := openai.NewContextualNetworkAnalyst(s)
 
 	// If specific process parameters are provided, do focused analysis
 	if processName != "" || pid > 0 {
