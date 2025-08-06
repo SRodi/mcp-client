@@ -54,7 +54,7 @@ func FormatConnectionEvents(events []netclient.ConnectionEvent, maxEvents int) s
 		if event.WallTime.Format("2006-01-02") == now.Format("2006-01-02") {
 			timeStr = event.WallTime.Format("15:04:05")
 		}
-		
+
 		// Handle cases where destination is empty (e.g., Unix sockets)
 		var destStr string
 		if event.DestinationIP != "" && event.DestinationPort > 0 {
@@ -64,13 +64,13 @@ func FormatConnectionEvents(events []netclient.ConnectionEvent, maxEvents int) s
 		} else {
 			destStr = "(local socket)"
 		}
-		
+
 		// Clean up protocol names
 		protocol := event.Protocol
 		if protocol == "Unknown(0)" {
 			protocol = "UNIX"
 		}
-		
+
 		sb.WriteString(fmt.Sprintf("  %s | %s | %s | %s\n",
 			timeStr,
 			destStr,

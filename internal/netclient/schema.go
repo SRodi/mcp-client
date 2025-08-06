@@ -22,8 +22,8 @@ type ConnectionInfo struct {
 	RawSocktype     uint16  `json:"raw_socktype"`
 	ReturnCode      int32   `json:"return_code"`
 	SocketType      string  `json:"socket_type"`
-	Time            string  `json:"time"`           // ISO 8601 timestamp (primary)
-	Timestamp       float64 `json:"timestamp"`      // Raw timestamp from server (fallback)
+	Time            string  `json:"time"`      // ISO 8601 timestamp (primary)
+	Timestamp       float64 `json:"timestamp"` // Raw timestamp from server (fallback)
 	Type            string  `json:"type"`
 }
 
@@ -63,7 +63,7 @@ type ConnectionEvent struct {
 type PacketDropInfo struct {
 	PID       uint32  `json:"pid"`
 	Command   string  `json:"command"`
-	Reason    string  `json:"reason"`
+	Reason    string  `json:"drop_reason"`
 	Timestamp float64 `json:"timestamp"`
 }
 

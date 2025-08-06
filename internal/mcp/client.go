@@ -43,6 +43,7 @@ func (c *MCPClient) StartInteractiveMode(ctx context.Context) error {
 	fmt.Println("  droplist     - List recent packet drops")
 	fmt.Println("  analyze      - Analyze connection patterns")
 	fmt.Println("  insights     - Get AI insights about network behavior")
+	fmt.Println("  contextual   - Get contextual AI analysis with automatic tool usage")
 	fmt.Println("  tools        - Show available MCP tools")
 	fmt.Println("  help         - Show this help message")
 	fmt.Println("  quit/exit    - Exit interactive mode")
@@ -111,6 +112,9 @@ func (c *MCPClient) handleCommand(ctx context.Context, input string) error {
 	case "insights":
 		return c.handleInsightsCommand(ctx, parts[1:])
 
+	case "contextual":
+		return c.handleContextualCommand(ctx, parts[1:])
+
 	default:
 		return fmt.Errorf("unknown command: %s (type 'help' for available commands)", command)
 	}
@@ -153,18 +157,25 @@ func (c *MCPClient) showHelp() {
 	fmt.Println("  Get AI-powered insights about network behavior")
 	fmt.Println("  Examples:")
 	fmt.Println("    insights \"curl made 5 connections in 60 seconds\"")
+	fmt.Println()
+	fmt.Println("contextual <query>")
+	fmt.Println("  Get contextual AI analysis with automatic tool usage and comprehensive insights")
+	fmt.Println("  Examples:")
+	fmt.Println("    contextual \"Analyze the network behavior of process nginx\"")
+	fmt.Println("    contextual \"What's happening with my network connections?\"")
+	fmt.Println("    contextual \"Are there any packet drops or connection issues?\"")
 }
 
 // showTools displays available MCP tools
 func (c *MCPClient) showTools() {
 	fmt.Println("Available MCP Tools:")
 	fmt.Println()
-	fmt.Println("• get_network_summary: Get a summary of network connections for a specific process or PID")
-	fmt.Println("• list_connections: List recent network connection events")
-	fmt.Println("• get_packet_drop_summary: Get a summary of packet drop events for a specific process or PID")
-	fmt.Println("• list_packet_drops: List recent packet drop events")
-	fmt.Println("• analyze_patterns: Analyze network connection patterns and provide insights")
-	fmt.Println("• ai_insights: Get AI-powered insights about network behavior using OpenAI GPT-3.5-turbo")
+
+	// Get tools dynamically from the server
+	registeredTools := c.server.GetRegisteredTools()
+	for toolName, tool := range registeredTools {
+		fmt.Printf("• %s: %s\n", toolName, tool.Description)
+	}
 }
 
 // handleSummaryCommand processes the summary command
@@ -247,6 +258,35 @@ func (c *MCPClient) handleInsightsCommand(ctx context.Context, args []string) er
 	return nil
 }
 
+// handleContextualCommand processes the contextual analysis command
+func (c *MCPClient) handleContextualCommand(ctx context.Context, args []string) error {
+	if len(args) == 0 {
+		return fmt.Errorf("contextual command requires a query as argument")
+	}
+
+	query := strings.Join(args, " ")
+	// Remove quotes if present
+	if strings.HasPrefix(query, "\"") && strings.HasSuffix(query, "\"") {
+		query = strings.Trim(query, "\"")
+	}
+
+	arguments := map[string]any{
+		"query": query,
+	}
+
+	params := &mcp.CallToolParamsFor[map[string]any]{
+		Arguments: arguments,
+	}
+
+	result, err := c.server.handleContextualAnalysis(ctx, nil, params)
+	if err != nil {
+		return err
+	}
+
+	c.printResult(result)
+	return nil
+}
+
 // parseArguments parses command line arguments into a map
 func (c *MCPClient) parseArguments(args []string) map[string]any {
 	arguments := make(map[string]any)
@@ -316,6 +356,8 @@ func (c *MCPClient) RunSingleCommand(ctx context.Context, toolName string, argum
 		return c.server.handleAnalyzePatterns(ctx, nil, params)
 	case "ai_insights":
 		return c.server.handleAIInsights(ctx, nil, params)
+	case "contextual_analysis":
+		return c.server.handleContextualAnalysis(ctx, nil, params)
 	default:
 		return nil, fmt.Errorf("unknown tool: %s", toolName)
 	}
