@@ -170,13 +170,12 @@ func (c *MCPClient) showHelp() {
 func (c *MCPClient) showTools() {
 	fmt.Println("Available MCP Tools:")
 	fmt.Println()
-	fmt.Println("• get_network_summary: Get a summary of network connections for a specific process or PID")
-	fmt.Println("• list_connections: List recent network connection events")
-	fmt.Println("• get_packet_drop_summary: Get a summary of packet drop events for a specific process or PID")
-	fmt.Println("• list_packet_drops: List recent packet drop events")
-	fmt.Println("• analyze_patterns: Analyze network connection patterns and provide insights")
-	fmt.Println("• ai_insights: Get AI-powered insights about network behavior using OpenAI GPT-3.5-turbo")
-	fmt.Println("• intelligent_analysis: Get intelligent AI analysis with automatic tool usage and comprehensive insights")
+
+	// Get tools dynamically from the server
+	registeredTools := c.server.GetRegisteredTools()
+	for toolName, tool := range registeredTools {
+		fmt.Printf("• %s: %s\n", toolName, tool.Description)
+	}
 }
 
 // handleSummaryCommand processes the summary command
