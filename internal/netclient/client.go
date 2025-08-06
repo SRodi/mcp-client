@@ -111,6 +111,10 @@ func (c *Client) GetConnectionSummary(ctx context.Context, pid int, processName 
 		reqBody.ProcessName = processName // For backward compatibility
 	}
 
+	if c.verbose {
+		log.Printf("GetConnectionSummary: requesting data for pid=%d, processName='%s', duration=%d seconds", pid, processName, duration)
+	}
+
 	// Marshal request body
 	jsonData, err := json.Marshal(reqBody)
 	if err != nil {
@@ -218,7 +222,11 @@ func (c *Client) listConnectionsGET(ctx context.Context, pid *int, limit *int) (
 	}
 	defer resp.Body.Close()
 
-	return c.parseListConnectionsResponse(resp)
+	result, err := c.parseListConnectionsResponse(resp)
+	if c.verbose {
+		log.Printf("GET %s returned %d total events across %d PIDs", listURL, result.TotalEvents, result.TotalPIDs)
+	}
+	return result, err
 }
 
 // listConnectionsPOST uses the POST endpoint for listing connections

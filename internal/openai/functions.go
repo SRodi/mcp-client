@@ -74,11 +74,14 @@ func NewFunctionCallManager(mcpExecutor MCPToolExecutor) *FunctionCallManager {
 func (fm *FunctionCallManager) discoverMCPTools(discovery MCPToolDiscovery) {
 	tools := discovery.GetRegisteredTools()
 	
+	fmt.Printf("DEBUG: Discovering %d MCP tools for OpenAI function calling:\n", len(tools))
 	for toolName, tool := range tools {
 		// Convert MCP tool to OpenAI function definition
 		functionDef := fm.convertMCPToolToFunction(toolName, tool)
 		fm.functions = append(fm.functions, functionDef)
+		fmt.Printf("  - %s: %s\n", toolName, tool.Description)
 	}
+	fmt.Printf("DEBUG: Total %d functions registered for OpenAI\n", len(fm.functions))
 }
 
 // convertMCPToolToFunction converts an MCP tool definition to OpenAI function format

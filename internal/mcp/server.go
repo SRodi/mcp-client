@@ -267,6 +267,10 @@ func (s *NetworkMCPServer) handleGetNetworkSummary(ctx context.Context, session 
 		}
 	}
 
+	if s.verbose {
+		log.Printf("MCP Server: get_network_summary called with pid=%d, processName='%s', duration=%d", pid, processName, duration)
+	}
+
 	// Connect to eBPF server
 	if err := s.httpClient.Connect(ctx); err != nil {
 		return &mcp.CallToolResult{
@@ -335,6 +339,14 @@ func (s *NetworkMCPServer) handleListConnections(ctx context.Context, session *m
 		} else if maxInt, ok := maxVal.(int); ok {
 			maxEvents = maxInt
 		}
+	}
+
+	if s.verbose {
+		pidStr := "nil"
+		if pid != nil {
+			pidStr = fmt.Sprintf("%d", *pid)
+		}
+		log.Printf("MCP Server: list_connections called with pid=%s, processName='%s', maxEvents=%d", pidStr, processName, maxEvents)
 	}
 
 	// Connect to eBPF server
