@@ -18,14 +18,16 @@ type NetworkMCPServer struct {
 	httpClient    *netclient.Client
 	ebpfServerURL string
 	verbose       bool
+	registeredTools map[string]*mcp.Tool // Store registered tools for discovery
 }
 
 // NewNetworkMCPServer creates a new MCP server for network telemetry using the official SDK
 func NewNetworkMCPServer(ebpfServerURL string, verbose bool) *NetworkMCPServer {
 	s := &NetworkMCPServer{
-		httpClient:    netclient.NewClientWithVerbose(ebpfServerURL, verbose),
-		ebpfServerURL: ebpfServerURL,
-		verbose:       verbose,
+		httpClient:      netclient.NewClientWithVerbose(ebpfServerURL, verbose),
+		ebpfServerURL:   ebpfServerURL,
+		verbose:         verbose,
+		registeredTools: make(map[string]*mcp.Tool),
 	}
 
 	// Create the implementation info
@@ -52,7 +54,7 @@ func NewNetworkMCPServer(ebpfServerURL string, verbose bool) *NetworkMCPServer {
 // registerTools registers all available MCP tools using the official SDK
 func (s *NetworkMCPServer) registerTools() {
 	// Register get_network_summary tool
-	mcp.AddTool(s.server, &mcp.Tool{
+	networkSummaryTool := &mcp.Tool{
 		Name:        "get_network_summary",
 		Description: "Get a summary of network connections for a specific process or PID",
 		InputSchema: &jsonschema.Schema{
@@ -73,10 +75,12 @@ func (s *NetworkMCPServer) registerTools() {
 				},
 			},
 		},
-	}, s.handleGetNetworkSummary)
+	}
+	mcp.AddTool(s.server, networkSummaryTool, s.handleGetNetworkSummary)
+	s.registeredTools["get_network_summary"] = networkSummaryTool
 
 	// Register list_connections tool
-	mcp.AddTool(s.server, &mcp.Tool{
+	listConnectionsTool := &mcp.Tool{
 		Name:        "list_connections",
 		Description: "List recent network connection events",
 		InputSchema: &jsonschema.Schema{
@@ -97,29 +101,69 @@ func (s *NetworkMCPServer) registerTools() {
 				},
 			},
 		},
-	}, s.handleListConnections)
+	}
+	mcp.AddTool(s.server, listConnectionsTool, s.handleListConnections)
+	s.registeredTools["list_connections"] = listConnectionsTool
 
 	// Register analyze_patterns tool
-	mcp.AddTool(s.server, &mcp.Tool{
+	analyzePatternsTool := &mcp.Tool{
 		Name:        "analyze_patterns",
-		Description: "Analyze network connection patterns and provide insights",
+		Description: "Analyze network connection patterns and provide insights about connection behavior, frequency, and destinations",
 		InputSchema: &jsonschema.Schema{
 			Type: "object",
 			Properties: map[string]*jsonschema.Schema{
 				"pid": {
 					Type:        "integer",
-					Description: "Filter by process ID (optional)",
+					Description: "Process ID to analyze (optional, use either pid or process_name)",
 				},
 				"process_name": {
 					Type:        "string",
-					Description: "Filter by process name (optional)",
+					Description: "Process name to analyze (optional, use either pid or process_name)",
+				},
+				"duration": {
+					Type:        "integer",
+					Description: "Duration in seconds to analyze (default: 60)",
+					Default:     []byte("60"),
 				},
 			},
 		},
-	}, s.handleAnalyzePatterns)
+	}
+	mcp.AddTool(s.server, analyzePatternsTool, s.handleAnalyzePatterns)
+	s.registeredTools["analyze_patterns"] = analyzePatternsTool
+
+	// Register intelligent_analysis tool - this uses OpenAI with function calling
+	intelligentAnalysisTool := &mcp.Tool{
+		Name:        "intelligent_analysis",
+		Description: "Get AI-powered network analysis with automatic tool usage and comprehensive insights",
+		InputSchema: &jsonschema.Schema{
+			Type: "object",
+			Properties: map[string]*jsonschema.Schema{
+				"query": {
+					Type:        "string",
+					Description: "Natural language query about network behavior or analysis needed",
+				},
+				"process_name": {
+					Type:        "string",
+					Description: "Process name to focus analysis on (optional)",
+				},
+				"pid": {
+					Type:        "integer", 
+					Description: "Process ID to focus analysis on (optional)",
+				},
+				"duration": {
+					Type:        "integer",
+					Description: "Duration in seconds for analysis (default: 60)",
+					Default:     []byte("60"),
+				},
+			},
+			Required: []string{"query"},
+		},
+	}
+	mcp.AddTool(s.server, intelligentAnalysisTool, s.handleIntelligentAnalysis)
+	s.registeredTools["intelligent_analysis"] = intelligentAnalysisTool
 
 	// Register ai_insights tool
-	mcp.AddTool(s.server, &mcp.Tool{
+	aiInsightsTool := &mcp.Tool{
 		Name:        "ai_insights",
 		Description: "Get AI-powered insights about network behavior using OpenAI GPT-3.5-turbo",
 		InputSchema: &jsonschema.Schema{
@@ -132,10 +176,12 @@ func (s *NetworkMCPServer) registerTools() {
 			},
 			Required: []string{"summary_text"},
 		},
-	}, s.handleAIInsights)
+	}
+	mcp.AddTool(s.server, aiInsightsTool, s.handleAIInsights)
+	s.registeredTools["ai_insights"] = aiInsightsTool
 
 	// Register get_packet_drop_summary tool
-	mcp.AddTool(s.server, &mcp.Tool{
+	packetDropSummaryTool := &mcp.Tool{
 		Name:        "get_packet_drop_summary",
 		Description: "Get a summary of packet drop events for a specific process or PID",
 		InputSchema: &jsonschema.Schema{
@@ -156,10 +202,12 @@ func (s *NetworkMCPServer) registerTools() {
 				},
 			},
 		},
-	}, s.handleGetPacketDropSummary)
+	}
+	mcp.AddTool(s.server, packetDropSummaryTool, s.handleGetPacketDropSummary)
+	s.registeredTools["get_packet_drop_summary"] = packetDropSummaryTool
 
 	// Register list_packet_drops tool
-	mcp.AddTool(s.server, &mcp.Tool{
+	listPacketDropsTool := &mcp.Tool{
 		Name:        "list_packet_drops",
 		Description: "List recent packet drop events",
 		InputSchema: &jsonschema.Schema{
@@ -180,7 +228,9 @@ func (s *NetworkMCPServer) registerTools() {
 				},
 			},
 		},
-	}, s.handleListPacketDrops)
+	}
+	mcp.AddTool(s.server, listPacketDropsTool, s.handleListPacketDrops)
+	s.registeredTools["list_packet_drops"] = listPacketDropsTool
 }
 
 // handleGetNetworkSummary handles the get_network_summary tool call
@@ -670,4 +720,153 @@ func (s *NetworkMCPServer) handleListPacketDrops(ctx context.Context, session *m
 // GetServer returns the underlying MCP server
 func (s *NetworkMCPServer) GetServer() *mcp.Server {
 	return s.server
+}
+
+// GetRegisteredTools implements the MCPToolDiscovery interface
+func (s *NetworkMCPServer) GetRegisteredTools() map[string]*mcp.Tool {
+	return s.registeredTools
+}
+
+// RunSingleCommand implements the MCPToolExecutor interface for the OpenAI function calling
+func (s *NetworkMCPServer) RunSingleCommand(ctx context.Context, toolName string, arguments map[string]any) (*mcp.CallToolResult, error) {
+	params := &mcp.CallToolParamsFor[map[string]any]{
+		Arguments: arguments,
+	}
+
+	// Check if the tool exists in our registered tools
+	if _, exists := s.registeredTools[toolName]; !exists {
+		return &mcp.CallToolResult{
+			Content: []mcp.Content{
+				&mcp.TextContent{
+					Text: fmt.Sprintf("Unknown tool: %s", toolName),
+				},
+			},
+		}, nil
+	}
+
+	switch toolName {
+	case "get_network_summary":
+		return s.handleGetNetworkSummary(ctx, nil, params)
+	case "list_connections":
+		return s.handleListConnections(ctx, nil, params)
+	case "get_packet_drop_summary":
+		return s.handleGetPacketDropSummary(ctx, nil, params)
+	case "list_packet_drops":
+		return s.handleListPacketDrops(ctx, nil, params)
+	case "analyze_patterns":
+		return s.handleAnalyzePatterns(ctx, nil, params)
+	case "ai_insights":
+		return s.handleAIInsights(ctx, nil, params)
+	case "intelligent_analysis":
+		return s.handleIntelligentAnalysis(ctx, nil, params)
+	default:
+		return &mcp.CallToolResult{
+			Content: []mcp.Content{
+				&mcp.TextContent{
+					Text: fmt.Sprintf("Tool %s is registered but handler not implemented", toolName),
+				},
+			},
+		}, nil
+	}
+}
+
+// handleIntelligentAnalysis handles the intelligent_analysis tool call using OpenAI function calling
+func (s *NetworkMCPServer) handleIntelligentAnalysis(ctx context.Context, session *mcp.ServerSession, params *mcp.CallToolParamsFor[map[string]any]) (*mcp.CallToolResult, error) {
+	if s.verbose {
+		log.Printf("MCP Server: Handling intelligent_analysis request")
+	}
+
+	// Parse arguments
+	arguments := params.Arguments
+	query, exists := arguments["query"]
+	if !exists {
+		return &mcp.CallToolResult{
+			Content: []mcp.Content{
+				&mcp.TextContent{
+					Text: "Error: query parameter is required for intelligent analysis",
+				},
+			},
+		}, nil
+	}
+
+	queryStr, ok := query.(string)
+	if !ok {
+		return &mcp.CallToolResult{
+			Content: []mcp.Content{
+				&mcp.TextContent{
+					Text: "Error: query must be a string",
+				},
+			},
+		}, nil
+	}
+
+	// Parse optional parameters
+	var pid int
+	var processName string
+	duration := 60
+
+	if pidVal, exists := arguments["pid"]; exists {
+		if pidFloat, ok := pidVal.(float64); ok {
+			pid = int(pidFloat)
+		}
+	}
+
+	if processNameVal, exists := arguments["process_name"]; exists {
+		if processNameStr, ok := processNameVal.(string); ok {
+			processName = processNameStr
+		}
+	}
+
+	if durationVal, exists := arguments["duration"]; exists {
+		if durFloat, ok := durationVal.(float64); ok {
+			duration = int(durFloat)
+		} else if durInt, ok := durationVal.(int); ok {
+			duration = durInt
+		}
+	}
+
+	// Create the intelligent network analyst
+	analyst := openai.NewIntelligentNetworkAnalyst(s)
+
+	// If specific process parameters are provided, do focused analysis
+	if processName != "" || pid > 0 {
+		analysis, err := analyst.AnalyzeProcess(ctx, processName, pid, duration)
+		if err != nil {
+			return &mcp.CallToolResult{
+				Content: []mcp.Content{
+					&mcp.TextContent{
+						Text: fmt.Sprintf("Error during intelligent analysis: %v", err),
+					},
+				},
+			}, nil
+		}
+
+		return &mcp.CallToolResult{
+			Content: []mcp.Content{
+				&mcp.TextContent{
+					Text: analysis,
+				},
+			},
+		}, nil
+	}
+
+	// Otherwise, process the general query
+	analysis, err := analyst.AnalyzeNetworkQuery(ctx, queryStr)
+	if err != nil {
+		return &mcp.CallToolResult{
+			Content: []mcp.Content{
+				&mcp.TextContent{
+					Text: fmt.Sprintf("Error during intelligent analysis: %v", err),
+				},
+			},
+		}, nil
+	}
+
+	return &mcp.CallToolResult{
+		Content: []mcp.Content{
+			&mcp.TextContent{
+				Text: analysis,
+			},
+		},
+	}, nil
 }

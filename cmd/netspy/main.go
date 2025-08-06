@@ -14,12 +14,13 @@ func main() {
 	var (
 		ebpfServerURL = flag.String("server", "http://localhost:8080", "eBPF server URL")
 		verbose       = flag.Bool("verbose", false, "Enable verbose logging")
-		mcpTool       = flag.String("tool", "", "Run a specific MCP tool (get_network_summary, list_connections, analyze_patterns, ai_insights)")
+		mcpTool       = flag.String("tool", "", "Run a specific MCP tool (get_network_summary, list_connections, analyze_patterns, ai_insights, intelligent_analysis)")
 		pid           = flag.Int("pid", 0, "Process ID to monitor")
 		processName   = flag.String("process", "", "Process name to monitor")
 		duration      = flag.Int("duration", 60, "Duration in seconds for monitoring")
 		maxEvents     = flag.Int("max-events", 100, "Maximum number of events to retrieve")
 		summaryText   = flag.String("summary-text", "", "Summary text for AI insights")
+		query         = flag.String("query", "", "Natural language query for intelligent analysis")
 		help          = flag.Bool("help", false, "Show help information")
 	)
 
@@ -38,7 +39,7 @@ func main() {
 
 	// If a specific tool is requested, run it and exit
 	if *mcpTool != "" {
-		arguments := buildMCPArguments(*pid, *processName, *duration, *maxEvents, *summaryText)
+		arguments := buildMCPArguments(*pid, *processName, *duration, *maxEvents, *summaryText, *query)
 		result, err := mcpClient.RunSingleCommand(ctx, *mcpTool, arguments)
 		if err != nil {
 			log.Fatalf("MCP tool execution failed: %v", err)
@@ -83,6 +84,7 @@ func showHelp() {
 	fmt.Println("                          list_packet_drops")
 	fmt.Println("                          analyze_patterns")
 	fmt.Println("                          ai_insights")
+	fmt.Println("                          intelligent_analysis")
 	fmt.Println()
 	fmt.Println("Tool Parameters:")
 	fmt.Println("  --pid PID             Process ID to monitor")
@@ -90,6 +92,7 @@ func showHelp() {
 	fmt.Println("  --duration SECONDS    Duration in seconds (default: 60)")
 	fmt.Println("  --max-events COUNT    Maximum events to retrieve (default: 100)")
 	fmt.Println("  --summary-text TEXT   Summary text for AI insights")
+	fmt.Println("  --query TEXT          Natural language query for intelligent analysis")
 	fmt.Println()
 	fmt.Println("Examples:")
 	fmt.Println("  # Interactive mode")
@@ -101,6 +104,8 @@ func showHelp() {
 	fmt.Println("  netspy --tool get_packet_drop_summary --process nginx --duration 300")
 	fmt.Println("  netspy --tool list_packet_drops --pid 1234")
 	fmt.Println("  netspy --tool ai_insights --summary-text \"High network activity detected\"")
+	fmt.Println("  netspy --tool intelligent_analysis --query \"Analyze nginx network behavior\"")
+	fmt.Println("  netspy --tool intelligent_analysis --query \"Are there any connection issues?\"")
 	fmt.Println()
 	fmt.Println("Interactive Commands:")
 	fmt.Println("  summary [--pid PID] [--process NAME] [--duration SECONDS]")
@@ -109,12 +114,13 @@ func showHelp() {
 	fmt.Println("  droplist [--pid PID] [--process NAME] [--max-events COUNT]")
 	fmt.Println("  analyze [--pid PID] [--process NAME]")
 	fmt.Println("  insights <summary_text>")
-	fmt.Println("  tools                 Show available MCP tools")
+	fmt.Println("  intelligent <query>    AI analysis with automatic tool usage")
+	fmt.Println("  tools                  Show available MCP tools")
 	fmt.Println("  help                  Show command help")
 	fmt.Println("  quit/exit             Exit interactive mode")
 }
 
-func buildMCPArguments(pid int, processName string, duration, maxEvents int, summaryText string) map[string]any {
+func buildMCPArguments(pid int, processName string, duration, maxEvents int, summaryText, query string) map[string]any {
 	arguments := make(map[string]any)
 
 	if pid > 0 {
@@ -131,6 +137,9 @@ func buildMCPArguments(pid int, processName string, duration, maxEvents int, sum
 	}
 	if summaryText != "" {
 		arguments["summary_text"] = summaryText
+	}
+	if query != "" {
+		arguments["query"] = query
 	}
 
 	return arguments
