@@ -131,9 +131,9 @@ func (s *NetworkMCPServer) registerTools() {
 	mcp.AddTool(s.server, analyzePatternsTool, s.handleAnalyzePatterns)
 	s.registeredTools["analyze_patterns"] = analyzePatternsTool
 
-	// Register intelligent_analysis tool - this uses OpenAI with function calling
+	// Register contextual_analysis tool - this uses OpenAI with function calling
 	contextualAnalysisTool := &mcp.Tool{
-		Name:        "intelligent_analysis",
+		Name:        "contextual_analysis",
 		Description: "Get AI-powered network analysis with automatic tool usage and comprehensive insights",
 		InputSchema: &jsonschema.Schema{
 			Type: "object",
