@@ -109,7 +109,10 @@ func TestConnectionInfo_ToConnectionEvent(t *testing.T) {
 			}
 			
 			// Test that the time matches what we expect (2024-01-01 12:xx:00 UTC)
-			expectedTime, _ := time.Parse(time.RFC3339, tt.input.Time)
+			expectedTime, err := time.Parse(time.RFC3339, tt.input.Time)
+			if err != nil {
+				t.Fatalf("Failed to parse expected time %s: %v", tt.input.Time, err)
+			}
 			if !result.WallTime.Equal(expectedTime) {
 				t.Errorf("WallTime = %v, want %v", result.WallTime, expectedTime)
 			}
