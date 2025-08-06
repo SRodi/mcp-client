@@ -107,7 +107,7 @@ func TestConnectionInfo_ToConnectionEvent(t *testing.T) {
 			if result.WallTime.IsZero() {
 				t.Error("WallTime should not be zero")
 			}
-			
+
 			// Test that the time matches what we expect (2024-01-01 12:xx:00 UTC)
 			expectedTime, err := time.Parse(time.RFC3339, tt.input.Time)
 			if err != nil {
@@ -122,10 +122,10 @@ func TestConnectionInfo_ToConnectionEvent(t *testing.T) {
 
 func TestParseDestination(t *testing.T) {
 	tests := []struct {
-		name             string
-		destination      string
-		expectedIP       string
-		expectedPort     uint16
+		name         string
+		destination  string
+		expectedIP   string
+		expectedPort uint16
 	}{
 		{"IPv4 with port", "192.168.1.1:80", "192.168.1.1", 80},
 		{"hostname with port", "example.com:443", "example.com", 443},
