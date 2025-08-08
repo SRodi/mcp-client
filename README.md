@@ -2,6 +2,8 @@
 
 A unified CLI tool that provides MCP (Model Context Protocol) server capabilities for real-time network connectivity analytics with AI-powered insights and OpenAI function calling integration.
 
+![Demo](demo.gif)
+
 ## 🚀 Features
 
 ### Core Capabilities
